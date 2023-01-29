@@ -1,24 +1,30 @@
-use anyhow::Result; // Automatically handle the error types
+// use anyhow::Result; // Automatically handle the error types
 use opencv::{
     prelude::*,
-    videoio,
-    highgui
+    videoio::{VideoCapture, CAP_ANY},
+    highgui::{destroy_window, named_window, imshow, wait_key, WINDOW_FULLSCREEN}
 };
 
-fn main(){ // Note, this is anyhow::Result
-    // Open a GUI window
-    highgui::named_window("window", highgui::WINDOW_FULLSCREEN)?;
-    // Open the web-camera (assuming you have one)
-    let mut cam = videoio::VideoCapture::new(0, videoio::CAP_ANY)?;
-    let mut frame = Mat::default(); // This array will store the web-cam data
-    // Read the camera
-    // and display in the window
+fn exit_app() {
+    destroy_window("window").unwrap()
+}
+
+fn main() {
+    named_window("window", WINDOW_FULLSCREEN).unwrap();
+
+    let mut cam = VideoCapture::new(0, CAP_ANY).unwrap();
+    let mut frame = Mat::default();
+
     loop {
-        cam.read(&mut frame)?;
-        highgui::imshow("window", &frame)?;
-        let key = highgui::wait_key(1)?;
-        if key == 113 { // quit with q
-            break;
+        cam.read(&mut frame).unwrap();
+        imshow("window", &frame).unwrap();
+
+        match wait_key(1) {
+            Ok(key) if key == 113 => {
+                exit_app();
+                break
+            },
+            _ => continue
         }
     }
 }
