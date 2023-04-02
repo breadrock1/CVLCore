@@ -7,3 +7,6 @@ edition = "2021"
 
 [dependencies]
 opencv = { version = "0.76.2" }
+plotters = { git = "https://github.com/38/plotters" }
+image = { version = "0.24.6" }
+ndarray = { version = "0.15.6" }
