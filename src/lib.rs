@@ -1,7 +1,8 @@
 pub mod cvldetector {
     use ndarray::prelude::*;
 
-    use opencv::core::{cart_to_polar, count_non_zero, find_non_zero, Mat, MatTrait, MatTraitConst, MatTraitConstManual, Point, Scalar, Vector, BORDER_DEFAULT, CV_32F, CV_64FC4, CV_8UC3, Rect};
+    use opencv::core::{absdiff, cart_to_polar, count_non_zero, find_non_zero, Mat, MatTrait, MatTraitConst, MatTraitConstManual, Point, Scalar, Vector, BORDER_DEFAULT, CV_32F, CV_64FC4, CV_8UC3, Rect};
+    use opencv::gapi::abs_diff;
     use opencv::imgproc;
     use opencv::types::VectorOfMat;
 
@@ -154,11 +155,12 @@ pub mod cvldetector {
 
         for non_z_point in non_zero_pixels.to_vec() {
             let index = non_z_point.y * cols + non_z_point.x;
+            println!("{:?}", data[index as usize]);
             let mut colored_scalar = match data[index as usize] {
                 val if val > 200 => Scalar::from(RED_COLOR),
-                val if val > 150 => Scalar::from(CYAN_COLOR),
-                val if val > 100 => Scalar::from(GREEN_COLOR),
-                val if val > 50 => Scalar::from(YELLOW_COLOR),
+                val if val > 100 && val <= 200 => Scalar::from(CYAN_COLOR),
+                val if val > 50 && val <= 100 => Scalar::from(GREEN_COLOR),
+                val if val > 0 && val <= 50 => Scalar::from(YELLOW_COLOR),
                 _val => Scalar::from(BLACK_COLOR),
             };
 
@@ -276,7 +278,37 @@ pub mod cvldetector {
         Ok(vibration_mask)
     }
 
-    pub fn gen_abs_frame(_frames: Vec<&Mat>) -> opencv::Result<Mat> {
+    // pub fn gen_abs_frame<'a>(_frames: &'a mut Vec<&'a Mat>) -> opencv::Result<&'a Mat> {
+    pub fn gen_abs_frame(_frames: &mut Vec<&Mat>) -> opencv::Result<Mat> {
         todo!()
+    }
+
+    fn lol(img1: &Mat, img2: &Mat) -> opencv::Result<Mat> {
+        let mut tmp = Mat::default();
+        absdiff(&img1, &img2, &mut tmp);
+        Ok(tmp)
+    }
+
+    pub fn kek(frame_images: &mut Vec<Mat>) -> opencv::Result<Mat> {
+        // if (frame_images.len() <= 1) {
+        //     let result_image = frame_images.first().unwrap();
+        //     return Ok(result_image.clone());
+        // }
+        // 
+        // let base_image = frame_images.pop().unwrap();
+        // let mut differences: Vec<Mat> = Vec::new();
+        // for image in frame_images {
+        //     let mut diff_image = Mat::default();
+        //     absdiff(&base_image, &image, &mut diff_image);
+        //     differences.push(diff_image);
+        // }
+        // 
+        // let result_image = frame_images.first().unwrap();
+        // Ok(result_image.clone())
+
+        let test = frame_images.iter()
+            .reduce(|img1, img2| lol(&img1, &img2).unwrap().)
+            .unwrap();
+        Ok(test.to_owned())
     }
 }
