@@ -1,4 +1,6 @@
 pub mod cvldetector {
+    use std::ops::Deref;
+    use std::rc::Rc;
     use ndarray::prelude::*;
 
     use opencv::core::{absdiff, cart_to_polar, count_non_zero, find_non_zero, Mat, MatTrait, MatTraitConst, MatTraitConstManual, Point, Scalar, Vector, BORDER_DEFAULT, CV_32F, CV_64FC4, CV_8UC3, Rect};
@@ -31,7 +33,6 @@ pub mod cvldetector {
     pub fn gen_grayscale_frame(frame: &Mat) -> opencv::Result<Mat> {
         let mut gray_frame = Mat::default();
         imgproc::cvt_color(&frame, &mut gray_frame, imgproc::COLOR_BGR2GRAY, 0).unwrap();
-
         Ok(gray_frame)
     }
 
@@ -141,75 +142,6 @@ pub mod cvldetector {
             .unwrap()
     }
 
-
-    pub fn calculate_vibrating_image(
-        image: &Mat,
-        _neighbours_bound: i32,
-    ) -> Result<Mat, opencv::Error> {
-        let mut non_zero_pixels = Vector::<Point>::new();
-        find_non_zero(&image, &mut non_zero_pixels).unwrap();
-
-        let (rows, cols) = (image.rows(), image.cols());
-        let data = image.data_typed::<u8>().expect("Failed to get types!");
-        let mut result_mat = Mat::new_rows_cols_with_default(rows, cols, CV_64FC4, Scalar::default()).unwrap();
-
-        for non_z_point in non_zero_pixels.to_vec() {
-            let index = non_z_point.y * cols + non_z_point.x;
-            println!("{:?}", data[index as usize]);
-            let mut colored_scalar = match data[index as usize] {
-                val if val > 200 => Scalar::from(RED_COLOR),
-                val if val > 100 && val <= 200 => Scalar::from(CYAN_COLOR),
-                val if val > 50 && val <= 100 => Scalar::from(GREEN_COLOR),
-                val if val > 0 && val <= 50 => Scalar::from(YELLOW_COLOR),
-                _val => Scalar::from(BLACK_COLOR),
-            };
-
-            result_mat
-                .at_2d_mut::<Scalar>(non_z_point.y, non_z_point.x)
-                .unwrap()
-                .copy_from_slice(colored_scalar.as_slice());
-        }
-
-        Ok(result_mat)
-    }
-
-    ///   0 1 2
-    /// 0 0 0 0
-    /// 1 0 x 0
-    /// 2 0 0 0
-    pub fn compute_vibrating_pixels(image: &Mat, neighbours: i32) -> Result<Mat, opencv::Error> {
-        let mut non_zero_pixels = Vector::<Point>::new();
-        find_non_zero(&image, &mut non_zero_pixels).unwrap();
-
-        let mut result_frame = image.clone();
-        for non_z_point in non_zero_pixels.to_vec() {
-            let (row, col) = (non_z_point.y, non_z_point.x);
-            let l_corn = Point::new(row - 1, col - 1);
-            let r_corn = Point::new(row + 1, col + 1);
-            let rect = Rect::from_points(l_corn, r_corn);
-            let roi_mat = Mat::roi(&image, rect);
-            if roi_mat.is_err() {
-                continue;
-            }
-
-            let mut non_zero_count = match count_non_zero(&roi_mat.unwrap()) {
-                Ok(count) if count < neighbours => 0,
-                Ok(count) => count - 1,
-                _ => 0
-            };
-
-            let mut kek = result_frame.at_2d_mut::<u8>(row, col).unwrap();
-            kek = &mut (non_zero_count as u8);
-        }
-
-        Ok(result_frame)
-    }
-
-
-
-
-
-
     pub fn gen_distribution_frame(
         image: &Mat,
         thresh: f64,
@@ -278,37 +210,99 @@ pub mod cvldetector {
         Ok(vibration_mask)
     }
 
-    // pub fn gen_abs_frame<'a>(_frames: &'a mut Vec<&'a Mat>) -> opencv::Result<&'a Mat> {
-    pub fn gen_abs_frame(_frames: &mut Vec<&Mat>) -> opencv::Result<Mat> {
-        todo!()
-    }
-
-    fn lol(img1: &Mat, img2: &Mat) -> opencv::Result<Mat> {
+    fn gen_diff_frame(img1: &Mat, img2: &Mat) -> opencv::Result<Mat> {
         let mut tmp = Mat::default();
         absdiff(&img1, &img2, &mut tmp);
         Ok(tmp)
     }
 
-    pub fn kek(frame_images: &mut Vec<Mat>) -> opencv::Result<Mat> {
-        // if (frame_images.len() <= 1) {
-        //     let result_image = frame_images.first().unwrap();
-        //     return Ok(result_image.clone());
-        // }
-        // 
-        // let base_image = frame_images.pop().unwrap();
-        // let mut differences: Vec<Mat> = Vec::new();
-        // for image in frame_images {
-        //     let mut diff_image = Mat::default();
-        //     absdiff(&base_image, &image, &mut diff_image);
-        //     differences.push(diff_image);
-        // }
-        // 
-        // let result_image = frame_images.first().unwrap();
-        // Ok(result_image.clone())
+    pub fn gen_abs_frame(frame_images: &Vec<Mat>) -> opencv::Result<Mat> {
+        if frame_images.len() <= 1 {
+            let result_image = frame_images.first().unwrap();
+            let result_img = result_image.deref();
+            return Ok(result_img.clone());
+        }
 
-        let test = frame_images.iter()
-            .reduce(|img1, img2| lol(&img1, &img2).unwrap().)
-            .unwrap();
-        Ok(test.to_owned())
+        let mut differences: Vec<Mat> = Vec::new();
+        let base_image = frame_images.last().unwrap();
+        let frame_images_len = frame_images.len();
+        let sliced_array = &frame_images[0..frame_images_len - 1];
+        for image in sliced_array.iter() {
+            let test = gen_diff_frame(&base_image, &image).unwrap();
+            differences.push(test);
+        }
+
+        let result_image = kek(&differences).unwrap();
+        Ok(result_image)
     }
+
+
+
+    pub fn calculate_vibrating_image(
+        image: &Mat,
+        _neighbours: i32,
+    ) -> Result<Mat, opencv::Error> {
+        let mut non_zero_pixels = Vector::<Point>::new();
+        find_non_zero(&image, &mut non_zero_pixels).unwrap();
+
+        let (rows, cols) = (image.rows(), image.cols());
+        let data = image.data_typed::<u8>().expect("Failed to get types!");
+        let mut result_mat = Mat::new_rows_cols_with_default(rows, cols, CV_64FC4, Scalar::default()).unwrap();
+
+        for non_z_point in non_zero_pixels.to_vec() {
+            let index = non_z_point.y * cols + non_z_point.x;
+            println!("{:?}", data[index as usize]);
+            let mut colored_scalar = match data[index as usize] {
+                val if val > 200 => Scalar::from(RED_COLOR),
+                val if val > 100 && val <= 200 => Scalar::from(CYAN_COLOR),
+                val if val > 50 && val <= 100 => Scalar::from(GREEN_COLOR),
+                val if val > 0 && val <= 50 => Scalar::from(YELLOW_COLOR),
+                _val => Scalar::from(BLACK_COLOR),
+            };
+
+            result_mat
+                .at_2d_mut::<Scalar>(non_z_point.y, non_z_point.x)
+                .unwrap()
+                .copy_from_slice(colored_scalar.as_slice());
+        }
+
+        Ok(result_mat)
+    }
+
+
+
+
+
+    ///   0 1 2
+    /// 0 0 0 0
+    /// 1 0 x 0
+    /// 2 0 0 0
+    pub fn compute_vibrating_pixels(image: &Mat, neighbours: i32) -> Result<Mat, opencv::Error> {
+        let mut non_zero_pixels = Vector::<Point>::new();
+        find_non_zero(&image, &mut non_zero_pixels).unwrap();
+
+        let mut result_frame = image.clone();
+        for non_z_point in non_zero_pixels.to_vec() {
+            let (row, col) = (non_z_point.y, non_z_point.x);
+            let l_corn = Point::new(row - 1, col - 1);
+            let r_corn = Point::new(row + 1, col + 1);
+            let rect = Rect::from_points(l_corn, r_corn);
+            let roi_mat = Mat::roi(&image, rect);
+            if roi_mat.is_err() {
+                continue;
+            }
+
+            let mut non_zero_count = match count_non_zero(&roi_mat.unwrap()) {
+                Ok(count) if count < neighbours => 0,
+                Ok(count) => count - 1,
+                _ => 0
+            };
+
+            let mut kek = result_frame.at_2d_mut::<u8>(row, col).unwrap();
+            kek = &mut (non_zero_count as u8);
+        }
+
+        Ok(result_frame)
+    }
+
 }

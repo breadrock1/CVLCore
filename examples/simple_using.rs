@@ -1,4 +1,5 @@
 extern crate cvldetector;
+
 use crate::cvldetector::cvldetector::*;
 
 use opencv::prelude::VideoCaptureTrait;
@@ -10,7 +11,7 @@ fn main() {
     let mut thresh1 = 150.0;
     let mut thresh2 = 100.0;
 
-    let mut frames_to_abs: Vec<&Mat> = Vec::new();
+    let mut frames_to_abs: Vec<Mat> = Vec::new();
 
     highgui::named_window("Simple using", highgui::WINDOW_FULLSCREEN).unwrap();
     let mut cam = videoio::VideoCapture::new(0, videoio::CAP_ANY).unwrap();
@@ -23,20 +24,21 @@ fn main() {
         // let thresh_frame = gen_threshold_frame(&gray_frame, thresh1, maxval).unwrap();
         // let canny_frame = gen_canny_frame(&thresh_frame, thresh1, thresh2, 5, true).unwrap();
         // let mut canny_frame = gen_canny_frame_by_sigma(&thresh_frame, 5, 0.33, true).unwrap();
-        let mut canny_frame = gen_canny_frame_by_sigma(&gray_frame, 3, 0.01, true).unwrap();
-        frames_to_abs.push(&canny_frame);
+        let canny_frame = gen_canny_frame_by_sigma(&gray_frame, 3, 0.01, true).unwrap();
+        frames_to_abs.push(canny_frame.clone());
         // let distrib_frame = gen_distribution_frame(&canny_frame, thresh1, maxval).unwrap();
-
         // let vibro_frame = compute_vibrating_pixels(&canny_frame, 4).unwrap();
         // let distrib_frame = calculate_vibrating_image(&vibro_frame, 4).unwrap();
 
-        if (frames_to_abs.len() < 10) {
+        if (frames_to_abs.len() < 5) {
             continue;
         }
-        let abs_image = kek(&mut frames_to_abs).unwrap();
-        // let distrib_frame = calculate_vibrating_image(&canny_frame, 4).unwrap();
 
-        highgui::imshow("window", &abs_image).unwrap();
+        frames_to_abs.remove(0);
+        let abs_image = gen_abs_frame(&frames_to_abs).unwrap();
+        let distrib_frame = calculate_vibrating_image(&abs_image, 4).unwrap();
+
+        highgui::imshow("window", &distrib_frame).unwrap();
         match highgui::wait_key(1) {
             Ok(key) => match key {
                 113 => {
