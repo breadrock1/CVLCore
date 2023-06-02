@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 opencv = { version = "0.76.2" }
+ndarray = { version = "0.15.6" }
