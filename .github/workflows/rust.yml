@@ -15,7 +15,7 @@ jobs:
 
     steps:
     - name: Test
-      run: apt-get install -y libopencv-dev python3-opencv
+      run: sudo apt-get install -y libopencv-dev python3-opencv
 
     - uses: actions/checkout@v2
     - uses: Dovyski/setup-opencv-action@v1.1
