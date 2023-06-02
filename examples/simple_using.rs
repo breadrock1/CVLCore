@@ -15,7 +15,7 @@ fn main() {
         cam.read(&mut frame).unwrap();
 
         let gray_frame = gen_grayscale_frame(&frame).unwrap();
-        let canny_frame = gen_canny_frame_by_sigma(&gray_frame, 3, 0.01, true).unwrap();
+        let canny_frame = gen_canny_frame_by_sigma(&gray_frame, 3, 0.05, true).unwrap();
         frames_to_abs.push(canny_frame.clone());
         if frames_to_abs.len() < 5 {
             continue;
@@ -23,9 +23,7 @@ fn main() {
 
         frames_to_abs.remove(0);
         let abs_image = gen_abs_frame(&frames_to_abs).unwrap();
-        let computed_image = compute_vibrating_pixels(&abs_image, 2).unwrap();
-        // let vibrating_frame = calculate_vibrating_image(&computed_image).unwrap();
-
+        let computed_image = compute_vibrating_pixels(&abs_image, 5).unwrap();
         highgui::imshow("window", &computed_image).unwrap();
         match highgui::wait_key(1) {
             Ok(key) => match key {
