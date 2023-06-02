@@ -3,25 +3,25 @@ pub mod cvldetector {
 
     use ndarray::prelude::Array;
     use opencv::core::{absdiff, cart_to_polar, count_non_zero, find_non_zero};
+    use opencv::core::{Mat, MatExprTraitConst, MatTrait, MatTraitConst, MatTraitConstManual};
     use opencv::core::{Point, Rect, Scalar, Vector};
-    use opencv::core::{BORDER_DEFAULT, CV_32F, CV_64FC4, CV_8UC3, CV_8UC1};
-    use opencv::core::{Mat, MatTrait, MatTraitConst, MatTraitConstManual, MatExprTraitConst};
+    use opencv::core::{BORDER_DEFAULT, CV_32F, CV_64FC4, CV_8UC3};
     use opencv::imgproc;
     use opencv::types::VectorOfMat;
 
-    /// The red color pixel value used for marking magnitude and vibration Mat object.
+    /// A red color pixel value used for marking magnitude and vibration Mat object.
     pub const RED_COLOR: (f64, f64, f64, f64) = (0.0, 0.0, 255.0, 0.0);
 
-    /// The cyan color pixel value used for marking magnitude and vibration Mat object.
+    /// A cyan color pixel value used for marking magnitude and vibration Mat object.
     pub const CYAN_COLOR: (f64, f64, f64, f64) = (255.0, 255.0, 0.0, 0.0);
 
-    /// The green color pixel value used for marking magnitude and vibration Mat object.
+    /// A green color pixel value used for marking magnitude and vibration Mat object.
     pub const GREEN_COLOR: (f64, f64, f64, f64) = (0.0, 255.0, 0.0, 0.0);
 
-    /// The yellow color pixel value used for marking magnitude and vibration Mat object.
+    /// A yellow color pixel value used for marking magnitude and vibration Mat object.
     pub const YELLOW_COLOR: (f64, f64, f64, f64) = (0.0, 255.0, 255.0, 0.0);
 
-    /// The black color pixel value used for marking magnitude and vibration Mat object.
+    /// A black color pixel value used for marking magnitude and vibration Mat object.
     pub const BLACK_COLOR: (f64, f64, f64, f64) = (0.0, 0.0, 0.0, 0.0);
 
     /// Transformations within RGB space like adding/removing the alpha channel, reversing the
@@ -115,7 +115,7 @@ pub mod cvldetector {
         Ok(canny_frame)
     }
 
-    /// This mehtod returns arithmetic mean (average) of all elements in array.
+    /// This method returns arithmetic mean (average) of all elements in array.
     /// In mathematics and statistics, the arithmetic mean / arithmetic average is the sum of a
     /// collection of numbers divided by the count of numbers in the collection. The collection
     /// is often a set of results from an experiment, an observational study, or a survey. The
@@ -123,7 +123,7 @@ pub mod cvldetector {
     /// it helps distinguish it from other types of means, such as geometric and harmonic.
     ///
     /// ## Parameters:
-    /// * frame: (&Mat) the passed video stream frame to transform.
+    /// * frame: (&Mat) a passed video stream frame to transform.
     pub fn calculate_mat_median(frame: &Mat) -> f64 {
         let rows = frame.rows() as usize;
         let cols = frame.cols() as usize;
@@ -143,6 +143,16 @@ pub mod cvldetector {
             .unwrap()
     }
 
+    /// This method returns distribution image from passed grayscale image by passed parameters.
+    /// The distribution image is representation of the distribution of pixel gradients intensities
+    /// in a digital image. As I mentioned in the introduction, image gradients are used as the
+    /// basic building blocks in many computer vision and image processing applications. However,
+    /// the network application of image gradients lies within edge detection.
+    ///
+    /// ## Parameters:
+    /// * image: (&Mat) a passed video stream frame to transform.
+    /// * thresh: (f64) a black/white bound-value to thresholding source image.
+    /// * maxval: (f64) a maximum value to use with the thresholding types.
     pub fn gen_distribution_frame(
         image: &Mat,
         thresh: f64,
@@ -191,8 +201,8 @@ pub mod cvldetector {
 
         let image_map_shape = (orientation.rows(), orientation.cols(), 3);
         let mut _image_map = Mat::new_rows_cols_with_default(
-            image_map_shape.0 as i32,
-            image_map_shape.1 as i32,
+            image_map_shape.0,
+            image_map_shape.1,
             CV_8UC3,
             Scalar::new(0.0, 0.0, 0.0, 0.0),
         )
@@ -204,12 +214,31 @@ pub mod cvldetector {
         Ok(vibration_mask)
     }
 
+    /// There is wrapper method to invoke opencv::absdiff() method.
+    ///
+    /// ## Parameters:
+    /// * img1: (&Mat) a first passed frame;
+    /// * img2: (&Mat) a second passed frame to sub;
+    #[inline]
     fn gen_diff_frame(img1: &Mat, img2: &Mat) -> opencv::Result<Mat> {
         let mut tmp = Mat::default();
         absdiff(&img1, &img2, &mut tmp).unwrap();
         Ok(tmp)
     }
 
+    /// This recursive method returns result-image of opencv::absdiff() method by passed
+    /// list of followed one by one frames of video stream. A result-image presents matrix
+    /// Absolute difference between two 2D-arrays when they have the same size and type
+    /// which used for removing from further analysis static pixels.
+    ///
+    /// For example, we have both matrix:
+    ///
+    /// 0 1 0       0 1 0      0 0 0
+    /// 1 0 1  and  1 1 1  =>  0 1 0
+    /// 0 1 0       0 1 0      0 0 0
+    ///
+    /// ## Parameters:
+    /// * frame_images: (&Vec<Mat>) a list of video stream frames to get vibro-image;
     pub fn gen_abs_frame(frame_images: &Vec<Mat>) -> opencv::Result<Mat> {
         if frame_images.len() <= 1 {
             let result_image = frame_images.first().unwrap();
@@ -222,7 +251,7 @@ pub mod cvldetector {
         let frame_images_len = frame_images.len();
         let sliced_array = &frame_images[0..frame_images_len - 1];
         for image in sliced_array.iter() {
-            let test = gen_diff_frame(&base_image, &image).unwrap();
+            let test = gen_diff_frame(base_image, image).unwrap();
             differences.push(test);
         }
 
@@ -230,13 +259,17 @@ pub mod cvldetector {
         Ok(result_image)
     }
 
-    ///   0 1 2
-    /// 0 0 0 0
-    /// 1 0 x 0
-    /// 2 0 0 0
+    /// This method returns image with vibrating pixels (colored by bounds values) by passed image.
+    /// The main algorithm iterates over each pixel of Canny-image and calculate amount of nonzero
+    /// pixels around current pixel. A target computed value replaced instead pixel value.
+    /// The vibration image is network procedure which used for anxiety triggering by dispersion
+    /// of statistic values.
+    ///
+    /// * image: (&Mat) a passed diff-image (results of abs) to transform.
+    /// * neighbours: (i32) a neighbours count value to filter noise of vibration.
     pub fn compute_vibrating_pixels(image: &Mat, neighbours: i32) -> Result<Mat, opencv::Error> {
         let (rows, cols) = (image.rows(), image.cols());
-        let mut zeros_frame = Mat::zeros(rows, cols, CV_64FC4).unwrap();
+        let zeros_frame = Mat::zeros(rows, cols, CV_64FC4).unwrap();
         let mut result_frame = zeros_frame.to_mat().unwrap();
 
         let mut non_zero_pixels = Vector::<Point>::new();
@@ -246,10 +279,10 @@ pub mod cvldetector {
             if row == 0 || col == 0 {
                 continue;
             }
-            let l_corn = Point::new(row - 1, col - 1);
-            let r_corn = Point::new(row + 1, col + 1);
+            let l_corn = Point::new(col - 2, row - 2);
+            let r_corn = Point::new(col + 2, row + 2);
             let rect = Rect::from_points(l_corn, r_corn);
-            let roi_mat = Mat::roi(&image, rect);
+            let roi_mat = Mat::roi(image, rect);
             if roi_mat.is_err() {
                 continue;
             }
@@ -257,10 +290,11 @@ pub mod cvldetector {
             let roi_matrix = &roi_mat.unwrap();
             let non_zero_count = count_non_zero(roi_matrix).unwrap();
             let colored_scalar = match non_zero_count {
-                val if val >= 5 => Scalar::from(RED_COLOR),
-                val if val >= 4 => Scalar::from(YELLOW_COLOR),
-                val if val >= 3 => Scalar::from(CYAN_COLOR),
-                val if val >= 2 => Scalar::from(GREEN_COLOR),
+                val if val < neighbours => Scalar::from(BLACK_COLOR),
+                val if val >= 8 => Scalar::from(RED_COLOR),
+                val if val >= 7 => Scalar::from(YELLOW_COLOR),
+                val if val >= 6 => Scalar::from(CYAN_COLOR),
+                val if val >= 5 => Scalar::from(GREEN_COLOR),
                 _ => Scalar::from(BLACK_COLOR),
             };
 
@@ -272,31 +306,4 @@ pub mod cvldetector {
 
         Ok(result_frame)
     }
-
-    // pub fn calculate_vibrating_image(image: &Mat) -> Result<Mat, opencv::Error> {
-    //     let (rows, cols) = (image.rows(), image.cols());
-    //     let mut zeros_frame = Mat::zeros(rows, cols, CV_64FC4).unwrap();
-    //     let mut result_mat = zeros_frame.to_mat().unwrap();
-    //
-    //     let mut non_zero_pixels = Vector::<Point>::new();
-    //     find_non_zero(&image, &mut non_zero_pixels);
-    //     for point in non_zero_pixels.to_vec() {
-    //         let (row, col) = (point.x, point.y);
-    //         let pixel_value = *image.at_2d::<u8>(row, col).unwrap() as i32;
-    //         let colored_scalar = match pixel_value {
-    //             val if val > 5 => Scalar::from(RED_COLOR),
-    //             val if val > 4 => Scalar::from(YELLOW_COLOR),
-    //             val if val > 3 => Scalar::from(CYAN_COLOR),
-    //             val if val > 2 => Scalar::from(GREEN_COLOR),
-    //             _ => Scalar::from(BLACK_COLOR),
-    //         };
-    //
-    //         result_mat
-    //             .at_2d_mut::<Scalar>(row, col)
-    //             .unwrap()
-    //             .copy_from_slice(colored_scalar.as_slice());
-    //     }
-    //
-    //     Ok(result_mat)
-    // }
 }
