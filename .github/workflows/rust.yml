@@ -19,7 +19,7 @@ jobs:
         sudo apt-get update
         sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 40976EAF437D05B5
         sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 3B4FE6ACC0B21F32
-        sudo apt-get install qt5-default libdc1394-22-dev python-dev
+        sudo apt-get install qtbase5-dev qtchooser qt5-qmake qtbase5-dev-tools libdc1394-22-dev python-dev
 
     - uses: Dovyski/setup-opencv-action@v1.1
       with:
