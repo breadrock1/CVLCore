@@ -8,3 +8,9 @@ edition = "2021"
 [dependencies]
 ndarray = "0.15.6"
 opencv = "0.82.0"
+
+[[example]]
+name = "web_cam_example"
+
+[[example]]
+name = "file_example"
