@@ -1,4 +1,4 @@
-name: Rust
+name: Build Project
 
 on:
   push:
@@ -10,37 +10,23 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-
+  dependencies:
+    runs-on: ubuntu-20.04
     steps:
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 40976EAF437D05B5
-        sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 3B4FE6ACC0B21F32
-        sudo apt-get install qtbase5-dev qtchooser qt5-qmake qtbase5-dev-tools
-
     - uses: Dovyski/setup-opencv-action@v1.1
       with:
         opencv-version: '4.0.0'
 
-#     - name: Cache OpenCV
-#       id: opencv-cache
-#       uses: actions/cache@v2
-#       with:
-#         path: ./opencv-install
-#         key: ${{ runner.os }}-opencv-cache
-
-#     - name: Install OpenCV
-#       uses: rayandrews/with-opencv-action@v1
-#       with:  
-#         dir: ./opencv-install
-#         cached: ${{ steps.opencv-cache.outputs.cache-hit }}
-#         opencv-version: '4.0.0'
-  
+  build:
+    runs-on: ubuntu-20.04
+    steps:
     - uses: actions/checkout@v3
     - name: Build
       run: cargo build --verbose
+
+  tests:
+    runs-on: ubuntu-20.04
+    steps:
     - name: Run tests
       run: cargo test --verbose
+      
