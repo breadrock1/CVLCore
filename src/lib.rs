@@ -28,7 +28,7 @@ pub mod cvldetector {
         channel_1: i32,
         channel_2: i32,
         channel_3: i32,
-        channel_4: i32
+        channel_4: i32,
     }
 
     impl ColorBounds {
@@ -37,7 +37,7 @@ pub mod cvldetector {
                 channel_1: ch1,
                 channel_2: ch2,
                 channel_3: ch3,
-                channel_4: ch4
+                channel_4: ch4,
             }
         }
     }
@@ -48,7 +48,7 @@ pub mod cvldetector {
                 channel_1: 8,
                 channel_2: 9,
                 channel_3: 10,
-                channel_4: 11
+                channel_4: 11,
             }
         }
     }
