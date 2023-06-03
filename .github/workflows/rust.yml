@@ -19,6 +19,7 @@ jobs:
 
   build:
     runs-on: ubuntu-20.04
+    needs: dependencies
     steps:
     - uses: actions/checkout@v3
     - name: Build
@@ -26,6 +27,7 @@ jobs:
 
   tests:
     runs-on: ubuntu-20.04
+    needs: build
     steps:
     - name: Run tests
       run: cargo test --verbose
