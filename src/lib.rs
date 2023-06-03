@@ -259,6 +259,28 @@ pub mod cvldetector {
         Ok(result_image)
     }
 
+    /// This method returns reduced result-image of opencv::absdiff() method by passed
+    /// list of followed one by one frames of video stream. A result-image presents matrix
+    /// Absolute difference between two 2D-arrays when they have the same size and type
+    /// which used for removing from further analysis static pixels.
+    ///
+    /// For example, we have both matrix:
+    ///
+    /// 0 1 0       0 1 0      0 0 0
+    /// 1 0 1  and  1 1 1  =>  0 1 0
+    /// 0 1 0       0 1 0      0 0 0
+    ///
+    /// ## Parameters:
+    /// * frame_images: (&Vec<Mat>) a list of video stream frames to get vibro-image;
+    pub fn gen_abs_frame_reduce(frame_images: &[Mat]) -> opencv::Result<Mat> {
+        let result = frame_images
+            .iter()
+            .cloned()
+            .reduce(|img1, img2| gen_diff_frame(&img1, &img2).unwrap());
+
+        Ok(result.unwrap())
+    }
+
     /// This method returns image with vibrating pixels (colored by bounds values) by passed image.
     /// The main algorithm iterates over each pixel of Canny-image and calculate amount of nonzero
     /// pixels around current pixel. A target computed value replaced instead pixel value.
@@ -267,7 +289,12 @@ pub mod cvldetector {
     ///
     /// * image: (&Mat) a passed diff-image (results of abs) to transform.
     /// * neighbours: (i32) a neighbours count value to filter noise of vibration.
-    pub fn compute_vibrating_pixels(image: &Mat, neighbours: i32) -> Result<Mat, opencv::Error> {
+    pub fn compute_vibrating_pixels(
+        image: &Mat,
+        neighbours: i32,
+        window_size: i32,
+        color_borders: &[i32],
+    ) -> Result<Mat, opencv::Error> {
         let (rows, cols) = (image.rows(), image.cols());
         let zeros_frame = Mat::zeros(rows, cols, CV_64FC4).unwrap();
         let mut result_frame = zeros_frame.to_mat().unwrap();
@@ -279,8 +306,8 @@ pub mod cvldetector {
             if row == 0 || col == 0 {
                 continue;
             }
-            let l_corn = Point::new(col - 2, row - 2);
-            let r_corn = Point::new(col + 2, row + 2);
+            let l_corn = Point::new(col - window_size, row - window_size);
+            let r_corn = Point::new(col + window_size, row + window_size);
             let rect = Rect::from_points(l_corn, r_corn);
             let roi_mat = Mat::roi(image, rect);
             if roi_mat.is_err() {
@@ -291,10 +318,10 @@ pub mod cvldetector {
             let non_zero_count = count_non_zero(roi_matrix).unwrap();
             let colored_scalar = match non_zero_count {
                 val if val < neighbours => Scalar::from(BLACK_COLOR),
-                val if val >= 8 => Scalar::from(RED_COLOR),
-                val if val >= 7 => Scalar::from(YELLOW_COLOR),
-                val if val >= 6 => Scalar::from(CYAN_COLOR),
-                val if val >= 5 => Scalar::from(GREEN_COLOR),
+                val if val >= color_borders[0] => Scalar::from(RED_COLOR),
+                val if val >= color_borders[1] => Scalar::from(YELLOW_COLOR),
+                val if val >= color_borders[2] => Scalar::from(CYAN_COLOR),
+                val if val >= color_borders[3] => Scalar::from(GREEN_COLOR),
                 _ => Scalar::from(BLACK_COLOR),
             };
 
