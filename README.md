@@ -2,9 +2,9 @@
 
 ![GitHub version](https://img.shields.io/badge/version-v1.0.1-green?style=plastic&labelColor=dark)
 
-[![Building Project](https://github.com/breadrock1/CVLDetector/actions/workflows/build-project-action.yml/badge.svg?branch=master)](https://github.com/breadrock1/CVLDetector/actions/workflows/build-project-action.yml)
+[![Building Project](https://github.com/breadrock1/CVLDetector/actions/workflows/rust.yml/badge.svg?branch=master)](https://github.com/breadrock1/CVLDetector/actions/workflows/build-project-action.yml)
 
-[![Creating Release](https://github.com/breadrock1/CVLDetector/actions/workflows/create-release-action.yml/badge.svg?branch=master&event=create)](https://github.com/breadrock1/CVLDetector/actions/workflows/create-release-action.yml)
+[![Creating Release](https://github.com/breadrock1/CVLDetector/actions/workflows/release.yml/badge.svg?branch=master&event=create)](https://github.com/breadrock1/CVLDetector/actions/workflows/create-release-action.yml)
 
 ### Program Description
 
