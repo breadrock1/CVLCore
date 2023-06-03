@@ -1,14 +1,14 @@
-# CVLDetector
+# CVLCore
 
 ![GitHub version](https://img.shields.io/badge/version-v1.0.1-green?style=plastic&labelColor=dark)
 
-[![Building Project](https://github.com/breadrock1/CVLDetector/actions/workflows/rust.yml/badge.svg?branch=master)](https://github.com/breadrock1/CVLDetector/actions/workflows/rust.yml)
+[![Building Project](https://github.com/breadrock1/CVLCore/actions/workflows/rust.yml/badge.svg?branch=master)](https://github.com/breadrock1/CVLDetector/actions/workflows/rust.yml)
 
-[//]: # ([![Creating Release]&#40;https://github.com/breadrock1/CVLDetector/actions/workflows/release.yml/badge.svg?branch=master&event=create&#41;]&#40;https://github.com/breadrock1/CVLDetector/actions/workflows/create-release-action.yml&#41;)
+[//]: # ([![Creating Release]&#40;https://github.com/breadrock1/CVLCore/actions/workflows/release.yml/badge.svg?branch=master&event=create&#41;]&#40;https://github.com/breadrock1/CVLDetector/actions/workflows/create-release-action.yml&#41;)
 
 ### Program Description
 
-The CVLDetector project is an opportunity for continuous analysis of a video stream with the functionality of calibrating parameters to generate a vibro-image, including calculating statistics of changes in vibrating pixels. Based on this information, the final client software provides the ability to detect macro/micro movement in the shooting area of both the video file and the broadcast.
+The CVLCore project is an opportunity for continuous analysis of a video stream with the functionality of calibrating parameters to generate a vibro-image, including calculating statistics of changes in vibrating pixels. Based on this information, the final client software provides the ability to detect macro/micro movement in the shooting area of both the video file and the broadcast.
 
 ![cvrimg.png](resources%2Fcvrimg.png)
 

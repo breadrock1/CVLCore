@@ -1,6 +1,6 @@
-extern crate cvldetector;
+extern crate cvlcore;
 
-use crate::cvldetector::cvldetector::*;
+use crate::cvlcore::cvlcore::*;
 
 use opencv::prelude::VideoCaptureTrait;
 use opencv::{core, highgui, videoio};
