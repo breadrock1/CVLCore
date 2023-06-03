@@ -24,6 +24,35 @@ pub mod cvldetector {
     /// A black color pixel value used for marking magnitude and vibration Mat object.
     pub const BLACK_COLOR: (f64, f64, f64, f64) = (0.0, 0.0, 0.0, 0.0);
 
+    pub struct ColorBounds {
+        channel_1: i32,
+        channel_2: i32,
+        channel_3: i32,
+        channel_4: i32
+    }
+
+    impl ColorBounds {
+        pub fn new(ch1: i32, ch2: i32, ch3: i32, ch4: i32) -> Self {
+            ColorBounds {
+                channel_1: ch1,
+                channel_2: ch2,
+                channel_3: ch3,
+                channel_4: ch4
+            }
+        }
+    }
+
+    impl Default for ColorBounds {
+        fn default() -> Self {
+            ColorBounds {
+                channel_1: 8,
+                channel_2: 9,
+                channel_3: 10,
+                channel_4: 11
+            }
+        }
+    }
+
     /// Transformations within RGB space like adding/removing the alpha channel, reversing the
     /// channel order, conversion to/from 16-bit RGB color (R5:G6:B5 or R5:G5:B5), as well as
     /// conversion to/from grayscale.
@@ -107,7 +136,7 @@ pub mod cvldetector {
         is_l2: bool,
     ) -> opencv::Result<Mat> {
         let median = calculate_mat_median(frame);
-        let (low, high) = (1.0 - sigma + median, 1.0 + sigma + median);
+        let (low, high) = (1.0 - sigma + median, 1.0 + &sigma + &median);
 
         let mut canny_frame = Mat::default();
         imgproc::canny(&frame, &mut canny_frame, low, high, size, is_l2).unwrap();
@@ -132,8 +161,8 @@ pub mod cvldetector {
 
         for r in 0..rows {
             for c in 0..cols {
-                let index = r * cols + c;
-                buffer[index] = data[r * cols + c] as f64;
+                let index = &r * &cols + &c;
+                buffer[index] = data[&r * &cols + &c] as f64;
             }
         }
 
@@ -293,7 +322,7 @@ pub mod cvldetector {
         image: &Mat,
         neighbours: i32,
         window_size: i32,
-        color_borders: &[i32],
+        color_borders: &ColorBounds,
     ) -> Result<Mat, opencv::Error> {
         let (rows, cols) = (image.rows(), image.cols());
         let zeros_frame = Mat::zeros(rows, cols, CV_64FC4).unwrap();
@@ -306,8 +335,8 @@ pub mod cvldetector {
             if row == 0 || col == 0 {
                 continue;
             }
-            let l_corn = Point::new(col - window_size, row - window_size);
-            let r_corn = Point::new(col + window_size, row + window_size);
+            let l_corn = Point::new(col - &window_size, row - &window_size);
+            let r_corn = Point::new(col + &window_size, row + &window_size);
             let rect = Rect::from_points(l_corn, r_corn);
             let roi_mat = Mat::roi(image, rect);
             if roi_mat.is_err() {
@@ -318,10 +347,10 @@ pub mod cvldetector {
             let non_zero_count = count_non_zero(roi_matrix).unwrap();
             let colored_scalar = match non_zero_count {
                 val if val < neighbours => Scalar::from(BLACK_COLOR),
-                val if val >= color_borders[0] => Scalar::from(RED_COLOR),
-                val if val >= color_borders[1] => Scalar::from(YELLOW_COLOR),
-                val if val >= color_borders[2] => Scalar::from(CYAN_COLOR),
-                val if val >= color_borders[3] => Scalar::from(GREEN_COLOR),
+                val if &val >= &color_borders.channel_4 => Scalar::from(RED_COLOR),
+                val if &val >= &color_borders.channel_3 => Scalar::from(YELLOW_COLOR),
+                val if &val >= &color_borders.channel_2 => Scalar::from(CYAN_COLOR),
+                val if &val >= &color_borders.channel_1 => Scalar::from(GREEN_COLOR),
                 _ => Scalar::from(BLACK_COLOR),
             };
 
