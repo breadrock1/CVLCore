@@ -41,7 +41,7 @@ fn main() {
         let computed_image =
             compute_vibrating_pixels(&abs_image, neighbours, window_size, &color_borders).unwrap();
         highgui::imshow("window", &computed_image).unwrap();
-        match highgui::wait_key(1) {
+        match highgui::wait_key(10) {
             Ok(key) => match key {
                 113 => {
                     exit_app();
