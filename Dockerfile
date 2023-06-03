@@ -2,7 +2,6 @@ FROM ubuntu:20.04
 
 # Install requirements
 RUN apt-get update && apt-get install -y \
-    # OpenCV dependencies
     build-essential git curl cmake clang llvm build-essential libgtk2.0-dev pkg-config libavcodec-dev  \
     libavformat-dev  libswscale-dev python3-dev python3-numpy libtbb2 libtbb-dev libjpeg-dev libpng-dev  \
     libtiff-dev  libdc1394-22-dev libcanberra-gtk-module libcanberra-gtk3-module
