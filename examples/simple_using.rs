@@ -9,8 +9,8 @@ fn main() {
     let neighbours = 8;
     let window_size = 2;
     let frames_set_size = 5;
-    let color_borders = [8, 9, 10, 11];
     let is_reduced_abs = true;
+    let color_borders = ColorBounds::default();
 
     let mut frames_to_abs: Vec<core::Mat> = Vec::new();
     highgui::named_window("Simple using", highgui::WINDOW_FULLSCREEN).unwrap();
