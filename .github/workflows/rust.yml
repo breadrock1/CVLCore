@@ -8,27 +8,44 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  OPENCV_LINK_PATHS: /usr/local/lib
+  OPENCV_INCLUDE_PATHS: /usr/local/include/opencv4
 
 jobs:
   dependencies:
     runs-on: ubuntu-20.04
     steps:
-    - uses: Dovyski/setup-opencv-action@v1.1
-      with:
-        opencv-version: '4.0.0'
+      - uses: actions/checkout@v3
+
+      - uses: Dovyski/setup-opencv-action@v1.1
+        with:
+          opencv-version: '4.7.0'
+          install-deps: true
+          opencv-extra-modules: false
+
+      - name: Install prerequisites
+        run: |
+          sudo apt update
+          sudo apt install -y make gcc patchelf chrpath \
+            qt5-default libopencv-dev clang libclang-dev
 
   build:
     runs-on: ubuntu-20.04
     needs: dependencies
     steps:
-    - uses: actions/checkout@v3
-    - name: Build
-      run: cargo build --verbose
+      - name: Build
+        run: cargo build --verbose
 
   tests:
     runs-on: ubuntu-20.04
     needs: build
     steps:
-    - name: Run tests
-      run: cargo test --verbose
-      
+      - name: Run tests
+        run: cargo test --verbose
+
+  docs:
+    runs-on: ubuntu-20.04
+    needs: tests
+    steps:
+      - name: Build docs
+        run: cargo doc --verbose
