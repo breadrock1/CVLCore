@@ -16,8 +16,8 @@ RUN git clone https://github.com/opencv/opencv.git && \
 RUN curl https://sh.rustup.rs -sSf | bash -s -- -y && \
     echo 'source $HOME/.cargo/env' >> $HOME/.bashrc
 
-COPY . /home/user/cvldetector
-WORKDIR /home/user/cvldetector
+COPY . /home/user/cvlcore
+WORKDIR /home/user/cvlcore
 
 CMD cargo build
 

@@ -1,4 +1,4 @@
-pub mod cvldetector {
+pub mod cvlcore {
     use std::ops::Deref;
 
     use ndarray::prelude::Array;
