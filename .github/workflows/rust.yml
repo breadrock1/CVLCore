@@ -26,6 +26,11 @@ jobs:
           sudo apt update
           sudo apt install -y make gcc patchelf chrpath \
             qt5-default libopencv-dev clang libclang-dev
+            
+      - uses: actions/checkout@v3
+      - name: Build
+        working-directory: /home/runner/work/CVLCore/CVLCore
+        run: cargo build --verbose
       
       - name: Cache OpenCV
         id: cache-opencv
