@@ -17,7 +17,7 @@ jobs:
     steps:    
       - uses: Dovyski/setup-opencv-action@v1.1        
         with:
-          opencv-version: '4.7.0'
+          opencv-version: '4.2.0'
           install-deps: true
           opencv-extra-modules: false
 
