@@ -1,0 +1,72 @@
+name: Create release
+
+on:
+  push:
+    branches:
+      - 'release/**'
+
+jobs:
+  create-release:
+    runs-on: ubuntu-20.04
+    
+    outputs:
+      version_output: ${{ steps.version.outputs.project_version }}
+      upload_url_output: ${{ steps.release.outputs.upload_url }}  
+    
+    steps:
+      - name: Checkout branch
+        id: checkout
+        uses: actions/checkout@v3
+        
+      - name: Project version
+        id: version
+        run: echo "project_version=$(cat VERSION)" >> $GITHUB_OUTPUT
+      
+      - name: Create release
+        id: release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          draft: false
+          prerelease: false
+          body_path: CHANGELOG.md
+          tag_name: cvlcore-${{ steps.version.outputs.project_version }}
+          release_name: cvlcore-${{ steps.version.outputs.project_version }}
+          
+  build-project:
+    name: Create release
+    runs-on: ubuntu-20.04
+    needs: create-release
+    permissions:
+      contents: write
+
+    steps:
+    - name: Checkout branch
+      uses: actions/checkout@v3
+      
+    - name: Build docker images
+      run: docker build -t opencv-build < Dockerfile
+      
+    - name: Copy archive from docker
+      run: |
+        IMAGE_ID=$(docker images | awk '{print $3}' | awk 'NR==2')
+        docker cp $IMAGE_ID:/home/user/cvlcore/target/release ./
+        
+    - name: Create archive
+      id: archive
+      uses: vimtor/action-zip@5f1c4aa587ea41db1110df6a99981dbe19cee310
+      with:
+        files: release
+        dest: cvlcore-linux-${{ needs.create-release.outputs.version_output }}.zip
+        recursive: true
+      
+    - name: Upload linux artifact
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create-release.outputs.upload_url_output }}
+        asset_name: cvlcore-linux-${{ needs.create-release.outputs.version_output }}.zip
+        asset_path: ./cvlcore-linux-${{ needs.create-release.outputs.version_output }}.zip
+        asset_content_type: application/zip
