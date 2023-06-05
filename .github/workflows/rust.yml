@@ -14,10 +14,7 @@ env:
 jobs:
   dependencies:
     runs-on: ubuntu-20.04
-    steps:
-      - name: Setting up working directory
-        run: cd /home/runner/work
-    
+    steps:    
       - uses: Dovyski/setup-opencv-action@v1.1        
         with:
           opencv-version: '4.7.0'
@@ -33,15 +30,16 @@ jobs:
       - name: Cache OpenCV
         uses: actions/cache@v3
         with:
-          path: /home/runner/work/opencv
+          path: /home/runner/work/CVLCore/CVLCore/opencv
 
-#   build:
-#     runs-on: ubuntu-20.04
-#     needs: dependencies
-#     steps:
-#       - uses: actions/checkout@v3
-#       - name: Build
-#         run: cargo build --verbose
+  build:
+    runs-on: ubuntu-20.04
+    needs: dependencies
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build
+        working-directory: /home/runner/work/CVLCore/CVLCore
+        run: cargo build --verbose
 
 #   tests:
 #     runs-on: ubuntu-20.04
