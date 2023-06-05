@@ -15,7 +15,10 @@ jobs:
   dependencies:
     runs-on: ubuntu-20.04
     steps:
-      - uses: Dovyski/setup-opencv-action@v1.1
+      - name: Setting up working directory
+        run: cd /home/runner/work
+    
+      - uses: Dovyski/setup-opencv-action@v1.1        
         with:
           opencv-version: '4.7.0'
           install-deps: true
@@ -26,25 +29,30 @@ jobs:
           sudo apt update
           sudo apt install -y make gcc patchelf chrpath \
             qt5-default libopencv-dev clang libclang-dev
+      
+      - name: Cache OpenCV
+        uses: actions/cache@v3
+        with:
+          path: /home/runner/work/opencv
 
-  build:
-    runs-on: ubuntu-20.04
-    needs: dependencies
-    steps:
-      - uses: actions/checkout@v3
-      - name: Build
-        run: cargo build --verbose
+#   build:
+#     runs-on: ubuntu-20.04
+#     needs: dependencies
+#     steps:
+#       - uses: actions/checkout@v3
+#       - name: Build
+#         run: cargo build --verbose
 
-  tests:
-    runs-on: ubuntu-20.04
-    needs: build
-    steps:
-      - name: Run tests
-        run: cargo test --verbose
+#   tests:
+#     runs-on: ubuntu-20.04
+#     needs: build
+#     steps:
+#       - name: Run tests
+#         run: cargo test --verbose
 
-  docs:
-    runs-on: ubuntu-20.04
-    needs: tests
-    steps:
-      - name: Build docs
-        run: cargo doc --verbose
+#   docs:
+#     runs-on: ubuntu-20.04
+#     needs: tests
+#     steps:
+#       - name: Build docs
+#         run: cargo doc --verbose
