@@ -31,7 +31,6 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Build rust project
-#         working-directory: /home/runner/work/CVLCore/CVLCore
         run: cargo build --verbose
       
 #       - name: Cache OpenCV
