@@ -23,9 +23,9 @@ jobs:
           sudo apt install -y build-essential cmake clang \
             libclang-dev llvm llvm-dev qt5-default libopencv-dev
       
-#       - uses: Dovyski/setup-opencv-action@v1.1        
-#         with:
-#           opencv-version: '4.6.0'
+      - uses: Dovyski/setup-opencv-action@v1.1        
+        with:
+          opencv-version: '4.6.0'
 
       - uses: actions/checkout@v3
 
