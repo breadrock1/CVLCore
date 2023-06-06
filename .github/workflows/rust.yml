@@ -25,26 +25,14 @@ jobs:
       - uses: Dovyski/setup-opencv-action@v1.1        
         with:
           opencv-version: '4.6.0'
-
-  build:
-    runs-on: ubuntu-20.04
-    needs: dependencies
-    steps:
+          
       - uses: actions/checkout@v3
       - name: Build project
-        run: cargo build --verbose --release --jobs $(nproc)
-
-  tests:
-    runs-on: ubuntu-20.04
-    needs: build
-    steps:
+        run: cargo build --verbose --release --all-targets --jobs $(nproc)
+        
       - name: Run tests
         run: cargo test --verbose
-
-  docs:
-    runs-on: ubuntu-20.04
-    needs: tests
-    steps:
+        
       - name: Build docs
         run: |
           cargo doc --verbose 
