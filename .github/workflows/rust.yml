@@ -24,9 +24,7 @@ jobs:
       
       - uses: Dovyski/setup-opencv-action@v1.1        
         with:
-          opencv-version: '4.2.0'
-          install-deps: true
-          opencv-extra-modules: false
+          opencv-version: '4.6.0'
 
       - uses: actions/checkout@v3
 
