@@ -16,7 +16,6 @@ jobs:
   dependencies:
     runs-on: ubuntu-20.04
     steps:
-      
       - name: Install prerequisites
         run: |
           sudo apt update
@@ -26,11 +25,6 @@ jobs:
       - uses: Dovyski/setup-opencv-action@v1.1        
         with:
           opencv-version: '4.6.0'
-
-      - uses: actions/checkout@v3
-
-      - name: Build rust project
-        run: cargo build --verbose
 
   build:
     runs-on: ubuntu-20.04
