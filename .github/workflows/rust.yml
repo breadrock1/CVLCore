@@ -28,7 +28,7 @@ jobs:
           
       - uses: actions/checkout@v3
       - name: Build project
-        run: cargo build --verbose --release --jobs $(nproc)
+        run: cargo build --verbose --jobs $(nproc)
         
       - name: Run tests
         run: cargo test --verbose
