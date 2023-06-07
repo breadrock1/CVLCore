@@ -19,3 +19,16 @@ For example, the user has the ability to change the size of the video frame set,
 This library allows you to:
 - Broadcast video stream from ip/RTSP/webcam, as well as from video files;
 - Transmission of alarms via API, calculated during the calculation of vibration pixel statistics.
+
+### Cite 
+@misc{CLVDetector,\
+  author = {Artem Amentes, Gleb Akimov},\
+  title = {Contactless Video Lie Detector},\
+  year = {2023},\
+  publisher = {GitHub},\
+  journal = {GitHub repository},\
+  email = {artem@socialcodesoftware.co.uk}
+}
+
+### License
+GNU AFFERO GENERAL PUBLIC LICENSE
