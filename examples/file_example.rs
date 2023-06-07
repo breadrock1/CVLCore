@@ -2,23 +2,30 @@ extern crate cvlcore;
 
 use crate::cvlcore::cvlcore::*;
 
+use opencv::core;
+use opencv::core::Vector;
+use opencv::highgui::{destroy_window, imshow, named_window, wait_key};
+use opencv::highgui::{WINDOW_AUTOSIZE, WINDOW_GUI_NORMAL};
+use opencv::imgcodecs::imwrite;
 use opencv::prelude::VideoCaptureTrait;
-use opencv::{core, highgui, videoio};
+use opencv::videoio::{VideoCapture, CAP_ANY};
+use opencv::imgcodecs::ImwriteFlags;
 
 fn main() {
     let neighbours = 8;
     let window_size = 2;
     let frames_set_size = 5;
     let is_reduced_abs = true;
-    let color_borders = ColorBounds::default();
-
+    let bounds = ColorBounds::default();
     let mut frames_to_abs: Vec<core::Mat> = Vec::new();
+
     let file_path_arg = std::env::args()
         .last()
         .expect("Video file path has not been passed!");
 
-    let mut cam =
-        videoio::VideoCapture::from_file(file_path_arg.as_str(), videoio::CAP_ANY).unwrap();
+    let main_win_name = "CVLDetector Demo";
+    named_window(main_win_name, WINDOW_AUTOSIZE | WINDOW_GUI_NORMAL).unwrap();
+    let mut cam = VideoCapture::from_file(file_path_arg.as_str(), CAP_ANY).unwrap();
 
     loop {
         let mut frame = core::Mat::default();
@@ -36,24 +43,19 @@ fn main() {
             true => gen_abs_frame_reduce(&frames_to_abs),
             false => gen_abs_frame(&frames_to_abs),
         }
-            .unwrap();
+        .unwrap();
 
-        let computed_image =
-            compute_vibrating_pixels(&abs_image, neighbours, window_size, &color_borders).unwrap();
-        highgui::imshow("window", &computed_image).unwrap();
-        match highgui::wait_key(10) {
-            Ok(key) => match key {
-                113 => {
-                    exit_app();
-                    break;
-                }
-                _ => (),
-            },
-            _ => continue,
+        let vibro_image = compute_vibration(&abs_image, neighbours, window_size, &bounds).unwrap();
+        imshow(main_win_name, &vibro_image).unwrap();
+        if let Ok(key) = wait_key(10) {
+            if key == 113 {
+                exit_app(main_win_name);
+                break;
+            }
         }
     }
 }
 
-fn exit_app() {
-    highgui::destroy_window("window").unwrap()
+fn exit_app(window_name: &str) {
+    destroy_window(window_name).unwrap()
 }
