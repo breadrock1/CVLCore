@@ -22,3 +22,7 @@ name = "web_cam_example"
 
 [[example]]
 name = "file_example"
+
+[[test]]
+name = "tests"
+path = "test/tests.rs"
