@@ -136,7 +136,7 @@ pub mod cvlcore {
         is_l2: bool,
     ) -> opencv::Result<Mat> {
         let median = calculate_mat_median(frame);
-        let (low, high) = (1.0 - sigma + median, 1.0 + &sigma + &median);
+        let (low, high) = (1.0 - sigma + median, 1.0 + &sigma + median);
 
         let mut canny_frame = Mat::default();
         imgproc::canny(&frame, &mut canny_frame, low, high, size, is_l2).unwrap();
@@ -161,8 +161,8 @@ pub mod cvlcore {
 
         for r in 0..rows {
             for c in 0..cols {
-                let index = &r * &cols + &c;
-                buffer[index] = data[&r * &cols + &c] as f64;
+                let index = r * cols + c;
+                buffer[index] = data[r * cols + c] as f64;
             }
         }
 
@@ -318,7 +318,7 @@ pub mod cvlcore {
     ///
     /// * image: (&Mat) a passed diff-image (results of abs) to transform.
     /// * neighbours: (i32) a neighbours count value to filter noise of vibration.
-    pub fn compute_vibrating_pixels(
+    pub fn compute_vibration(
         image: &Mat,
         neighbours: i32,
         window_size: i32,
@@ -335,8 +335,8 @@ pub mod cvlcore {
             if row == 0 || col == 0 {
                 continue;
             }
-            let l_corn = Point::new(col - &window_size, row - &window_size);
-            let r_corn = Point::new(col + &window_size, row + &window_size);
+            let l_corn = Point::new(col - window_size, row - window_size);
+            let r_corn = Point::new(col + window_size, row + window_size);
             let rect = Rect::from_points(l_corn, r_corn);
             let roi_mat = Mat::roi(image, rect);
             if roi_mat.is_err() {
@@ -347,10 +347,10 @@ pub mod cvlcore {
             let non_zero_count = count_non_zero(roi_matrix).unwrap();
             let colored_scalar = match non_zero_count {
                 val if val < neighbours => Scalar::from(BLACK_COLOR),
-                val if &val >= &color_borders.channel_4 => Scalar::from(RED_COLOR),
-                val if &val >= &color_borders.channel_3 => Scalar::from(YELLOW_COLOR),
-                val if &val >= &color_borders.channel_2 => Scalar::from(CYAN_COLOR),
-                val if &val >= &color_borders.channel_1 => Scalar::from(GREEN_COLOR),
+                val if val >= color_borders.channel_4 => Scalar::from(RED_COLOR),
+                val if val >= color_borders.channel_3 => Scalar::from(YELLOW_COLOR),
+                val if val >= color_borders.channel_2 => Scalar::from(CYAN_COLOR),
+                val if val >= color_borders.channel_1 => Scalar::from(GREEN_COLOR),
                 _ => Scalar::from(BLACK_COLOR),
             };
 
