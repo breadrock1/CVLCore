@@ -10,7 +10,7 @@
 
 The CVLCore project is an opportunity for continuous analysis of a video stream with the functionality of calibrating parameters to generate a vibro-image, including calculating statistics of changes in vibrating pixels. Based on this information, the final client software provides the ability to detect macro/micro movement in the shooting area of both the video file and the broadcast.
 
-![cvrimg.png](resources%2Fcvrimg.png)
+![Example of performance](resources/clv_work.gif)
 
 Detailed adjustment of video stream processing parameters provides an opportunity to calibrate the parameters of vibro-image generation, information about which is later used to calculate statistics.
 
@@ -19,3 +19,16 @@ For example, the user has the ability to change the size of the video frame set,
 This library allows you to:
 - Broadcast video stream from ip/RTSP/webcam, as well as from video files;
 - Transmission of alarms via API, calculated during the calculation of vibration pixel statistics.
+
+### Cite 
+@misc{CLVDetector,\
+  author = {Artem Amentes, Gleb Akimov},\
+  title = {Contactless Video Lie Detector},\
+  year = {2023},\
+  publisher = {GitHub},\
+  journal = {GitHub repository},\
+  email = {artem@socialcodesoftware.co.uk}
+}
+
+### License
+GNU AFFERO GENERAL PUBLIC LICENSE
