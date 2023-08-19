@@ -57,6 +57,11 @@ impl ChainProcessing {
         }
     }
 
+    pub fn set_frames(&mut self, mat_frames: &Vec<Rc<CvlMat>>) {
+        let test = mat_frames.to_owned();
+        let _ = &self.frames.extend(test);
+    }
+
     pub fn settings(&mut self) -> &mut ProcessingSettings {
         &mut self.settings
     }
