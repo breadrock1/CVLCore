@@ -8,7 +8,6 @@ edition = "2021"
 [dependencies]
 ndarray = "0.15.6"
 opencv = "0.84.5"
-rayon = "1.7.0"
 thiserror = "1.0.47"
 
 [[example]]
@@ -18,5 +17,9 @@ name = "web_cam_example"
 name = "file_example"
 
 [[test]]
-name = "tests"
+name = "main_tests"
 path = "test/tests.rs"
+
+[[bench]]
+name = "main_benchmarks"
+path = "test/benchmarks.rs"
