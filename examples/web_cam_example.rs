@@ -1,55 +1,42 @@
 extern crate cvlcore;
-
-use crate::cvlcore::cvlcore::*;
-
-use opencv::prelude::VideoCaptureTrait;
-use opencv::{core, highgui, videoio};
+use cvlcore::api::capture::*;
+use cvlcore::api::chain::*;
+use cvlcore::ui::*;
 
 fn main() {
-    let neighbours = 8;
-    let window_size = 2;
-    let frames_set_size = 5;
-    let is_reduced_abs = true;
-    let color_borders = ColorBounds::default();
+    let window_name = "CVLDetector Demo";
+    let window = MainWindow::new(window_name);
+    window.create_window();
 
-    let mut frames_to_abs: Vec<core::Mat> = Vec::new();
-    highgui::named_window("Simple using", highgui::WINDOW_FULLSCREEN).unwrap();
-    let mut cam = videoio::VideoCapture::new(0, videoio::CAP_ANY).unwrap();
+    let mut vcap = CvlCapture::default();
+    vcap.open_stream("0").unwrap();
+    processing_stream(&mut vcap, &window);
 
-    loop {
-        let mut frame = core::Mat::default();
-        cam.read(&mut frame).unwrap();
+    window.close_window();
+}
 
-        let gray_frame = gen_grayscale_frame(&frame).unwrap();
-        let canny_frame = gen_canny_frame_by_sigma(&gray_frame, 3, 0.05, true).unwrap();
-        frames_to_abs.push(canny_frame.clone());
-        if frames_to_abs.len() < frames_set_size {
+fn processing_stream(vcap: &mut CvlCapture, window: &MainWindow) {
+    let mut own_chain = ChainProcessing::default();
+    while let Ok(frame) = vcap.read_frame() {
+        let precessing_result = own_chain
+            .run_chain(frame)
+            .grayscale()
+            .canny()
+            .append_frame()
+            .reduce_abs()
+            .vibrating();
+
+        let chain_result = precessing_result.get_result();
+        if chain_result.is_err() {
+            println!("{}", chain_result.err().unwrap());
             continue;
         }
 
-        frames_to_abs.remove(0);
-        let abs_image = match is_reduced_abs {
-            true => gen_abs_frame_reduce(&frames_to_abs),
-            false => gen_abs_frame(&frames_to_abs),
-        }
-        .unwrap();
-
-        let computed_image =
-            compute_vibrating_pixels(&abs_image, neighbours, window_size, &color_borders).unwrap();
-        highgui::imshow("window", &computed_image).unwrap();
-        match highgui::wait_key(1) {
-            Ok(key) => match key {
-                113 => {
-                    exit_app();
-                    break;
-                }
-                _ => (),
-            },
-            _ => continue,
+        let cvl_mat = chain_result.unwrap();
+        window.show_frame(&cvl_mat);
+        match window.wait_event() {
+            WindowSignals::KeepProcessing => {}
+            WindowSignals::CLoseApplication => break,
         }
     }
-}
-
-fn exit_app() {
-    highgui::destroy_window("window").unwrap()
 }
