@@ -1,6 +1,6 @@
 use crate::core::cvl::CvlMat;
-use opencv::highgui::{ButtonCallback, create_button, destroy_window, imshow, named_window, wait_key};
-use opencv::highgui::{WINDOW_AUTOSIZE, WINDOW_GUI_NORMAL, QT_PUSH_BUTTON};
+use opencv::highgui::{destroy_window, imshow, named_window, wait_key};
+use opencv::highgui::{WINDOW_AUTOSIZE, WINDOW_GUI_NORMAL};
 
 pub enum WindowSignals {
     CLoseApplication,
@@ -40,11 +40,5 @@ impl MainWindow {
             113 => WindowSignals::CLoseApplication,
             _ => WindowSignals::KeepProcessing,
         }
-    }
-
-    pub fn create_btn(&self) {
-        let callback: ButtonCallback = Some(Box::new(|val: i32| { println!("{}", val); }));
-        create_button("Test", callback, QT_PUSH_BUTTON, true)
-            .unwrap();
     }
 }
