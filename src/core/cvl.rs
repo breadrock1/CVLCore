@@ -1,8 +1,6 @@
 use crate::core::bounds::ColorBounds;
 use crate::core::colors::*;
 use crate::errors::{ProcessingError, ProcessingResult};
-use std::ops::Deref;
-use std::rc::Rc;
 
 use ndarray::Array;
 use opencv::core::{absdiff, cart_to_polar, count_non_zero, find_non_zero};
@@ -11,7 +9,9 @@ use opencv::core::{Point, Rect, Scalar, Vector};
 use opencv::core::{BORDER_DEFAULT, CV_32F, CV_64FC4, CV_8UC3};
 use opencv::imgproc::{canny, cvt_color, sobel, threshold};
 use opencv::imgproc::{COLOR_BGR2GRAY, THRESH_BINARY};
-use opencv::types::VectorOfMat;
+
+use std::ops::Deref;
+use std::rc::Rc;
 
 #[derive(Default, Clone)]
 pub struct CvlMat {
@@ -52,10 +52,9 @@ impl Deref for CvlMat {
 ///
 /// ## Parameters:
 /// * frame: (&Mat) the passed video stream frame to transform.
-#[inline]
+#[inline(always)]
 pub fn gen_grayscale_frame(frame: &CvlMat) -> ProcessingResult {
     let mut gray_frame = Mat::default();
-    //number of channels in the destination image
     cvt_color(frame.frame(), &mut gray_frame, COLOR_BGR2GRAY, 0).unwrap();
     Ok(CvlMat::from(gray_frame))
 }
@@ -70,18 +69,11 @@ pub fn gen_grayscale_frame(frame: &CvlMat) -> ProcessingResult {
 /// * frame: (&Mat) the passed video stream frame to transform.
 /// * tresh: (f64) the black bound-value to swap pixel value to 1.
 /// * maxval: (f64) the white bound-value to swap pixel value to 0.
-#[inline]
+#[inline(always)]
 pub fn gen_threshold_frame(frame: &CvlMat, thresh: f64, maxval: f64) -> ProcessingResult {
-    let mut grayscale_frame: Mat = Mat::default();
-    threshold(
-        frame.frame(),
-        &mut grayscale_frame,
-        thresh,
-        maxval,
-        THRESH_BINARY,
-    )
-    .unwrap();
-    Ok(CvlMat::from(grayscale_frame))
+    let mut gray: Mat = Mat::default();
+    threshold(frame.frame(), &mut gray, thresh, maxval, THRESH_BINARY).unwrap();
+    Ok(CvlMat::from(gray))
 }
 
 /// This method returns canny image from passed grayscale image by passed parameters.
@@ -96,7 +88,7 @@ pub fn gen_threshold_frame(frame: &CvlMat, thresh: f64, maxval: f64) -> Processi
 /// * high: (f64) the second threshold for the hysteresis procedure.
 /// * size: (i32) the aperture size of Sobel operator to generate Canny view.
 /// * is_l2: (bool) the specifies the equation for finding gradient magnitude.
-#[inline]
+#[inline(always)]
 pub fn gen_canny_frame(
     frame: &CvlMat,
     low: f64,
@@ -120,7 +112,7 @@ pub fn gen_canny_frame(
 /// * size: (i32) the aperture size of Sobel operator to generate Canny view.
 /// * sigma: (f64) the value to vary the percentage thresholds that are determined based on simple statistics.
 /// * is_l2: (bool) the specifies the equation for finding gradient magnitude.
-#[inline]
+#[inline(always)]
 pub fn gen_canny_frame_by_sigma(
     frame: &CvlMat,
     size: i32,
@@ -136,6 +128,35 @@ pub fn gen_canny_frame_by_sigma(
     Ok(CvlMat::from(canny_frame))
 }
 
+/// This method returns new Mat object with zeros by passed rows, columns and type parameters.
+/// There is wrapper for [Mat::zeros] method.
+///
+/// ## Parameters:
+/// * rows: (i32) a rows of Mat.
+/// * cols: (i32) a columns of Mat.
+/// * cv_type: (i32) a Mat type (like CV_64FC4).
+#[inline(always)]
+fn create_zeros_mat(rows: i32, cols: i32, cv_type: i32) -> Option<Mat> {
+    let zeros_frame = Mat::zeros(rows, cols, cv_type).unwrap();
+    zeros_frame.to_mat().ok()
+}
+
+/// There is wrapper for [Mat::roi] method which returns a sub-Mat object from source Mat and Rect.
+/// By window parameter we get a sub-Mat with center point of (row, column).
+///
+/// ## Parameters:
+/// * frame: (&Mat) a Mat to roi.
+/// * rows: (i32) a rows of Mat point.
+/// * cols: (i32) a columns of Mat point.
+/// * window: (i32) an offset size.
+#[inline(always)]
+fn create_roi_mat(frame: &Mat, row: i32, col: i32, window: i32) -> Option<Mat> {
+    let l_corn = Point::new(col - window, row - window);
+    let r_corn = Point::new(col + window, row + window);
+    let rect = Rect::from_points(l_corn, r_corn);
+    Mat::roi(frame, rect).ok()
+}
+
 /// This method returns arithmetic mean (average) of all elements in array.
 /// In mathematics and statistics, the arithmetic mean / arithmetic average is the sum of a
 /// collection of numbers divided by the count of numbers in the collection. The collection
@@ -149,16 +170,14 @@ pub fn calculate_mat_median(frame: &CvlMat) -> Option<f64> {
     let mat_frame = frame.frame();
     let rows = mat_frame.rows() as usize;
     let cols = mat_frame.cols() as usize;
-    let mut buffer = vec![0f64; rows * cols];
 
-    let data = mat_frame.data_typed::<u8>().unwrap();
-
-    for r in 0..rows {
-        for c in 0..cols {
-            let index = r * cols + c;
-            buffer[index] = data[r * cols + c] as f64;
-        }
-    }
+    let buffer = frame
+        .frame()
+        .data_typed::<u8>()
+        .unwrap()
+        .iter()
+        .map(|d| *d as f64)
+        .collect();
 
     Array::from_shape_vec((rows, cols), buffer).unwrap().mean()
 }
@@ -175,32 +194,9 @@ pub fn calculate_mat_median(frame: &CvlMat) -> Option<f64> {
 /// * maxval: (f64) a maximum value to use with the thresholding types.
 pub fn gen_distribution_frame(image: &CvlMat, thresh: f64, maxval: f64) -> ProcessingResult {
     let mat_frame = image.frame();
-    let mut g_x = Mat::default();
-    let mut g_y = Mat::default();
-    sobel(
-        mat_frame,
-        &mut g_x,
-        CV_32F,
-        1,
-        0,
-        3,
-        1.0,
-        0 as f64,
-        BORDER_DEFAULT,
-    )
-    .unwrap();
-    sobel(
-        mat_frame,
-        &mut g_y,
-        CV_32F,
-        0,
-        1,
-        3,
-        1.0,
-        0 as f64,
-        BORDER_DEFAULT,
-    )
-    .unwrap();
+    let sobel_frame = gen_sobel_frame(mat_frame).unwrap();
+    let g_x = sobel_frame.frame().clone();
+    let g_y = sobel_frame.frame().clone();
 
     let mut magnitude = Mat::default();
     let mut orientation = Mat::default();
@@ -209,19 +205,40 @@ pub fn gen_distribution_frame(image: &CvlMat, thresh: f64, maxval: f64) -> Proce
     let mut mask = Mat::default();
     threshold(&magnitude, &mut mask, thresh, maxval, THRESH_BINARY).unwrap();
 
-    let image_map_shape = (orientation.rows(), orientation.cols(), 3);
-    let _image_map = Mat::new_rows_cols_with_default(
-        image_map_shape.0,
-        image_map_shape.1,
-        CV_8UC3,
-        Scalar::new(0.0, 0.0, 0.0, 0.0),
-    )
-    .unwrap();
+    let scalar = Scalar::new(0.0, 0.0, 0.0, 0.0);
+    let shape = (orientation.rows(), orientation.cols(), 3);
+    let img_map = Mat::new_rows_cols_with_default(shape.0, shape.1, CV_8UC3, scalar).unwrap();
 
-    // let vibration_mask = image; //.clone();
-    let mut nonzero_mask = VectorOfMat::default();
-    find_non_zero(mat_frame, &mut nonzero_mask).unwrap();
-    Ok(CvlMat::from(mat_frame.to_owned()))
+    // let mut nonzero_mask = VectorOfMat::default();
+    // println!("{} {}", mat_frame.channels(), mat_frame.dims());
+    // find_non_zero(&mat_frame, &mut nonzero_mask).unwrap();
+
+    // let non_zero_count = count_non_zero(&orientation).unwrap();
+    // let colored_scalar = match non_zero_count {
+    //     val if val < neighbours => Scalar::from(BLACK_COLOR),
+    //     val if val >= color_borders.get(4) => Scalar::from(RED_COLOR),
+    //     val if val >= color_borders.get(3) => Scalar::from(YELLOW_COLOR),
+    //     val if val >= color_borders.get(2) => Scalar::from(CYAN_COLOR),
+    //     val if val >= color_borders.get(1) => Scalar::from(GREEN_COLOR),
+    //     _ => Scalar::from(BLACK_COLOR),
+    // };
+
+    Ok(CvlMat::from(img_map.to_owned()))
+}
+
+/// Calculates the first, second, third, or mixed image derivatives using an extended Sobel operator.
+/// The Sobel operators combine Gaussian smoothing and differentiation, so the result is more or less
+/// resistant to the noise. Most often, the function is called with ( xorder = 1, yorder = 0, ksize = 3)
+/// or ( xorder = 0, yorder = 1, ksize = 3) to calculate the first x- or y- image derivative.
+/// The first case corresponds to a kernel of:
+///
+/// ## Parameters:
+/// * frame: (&Mat) the passed video stream frame to transform.
+#[inline(always)]
+fn gen_sobel_frame(frame: &Mat) -> ProcessingResult {
+    let mut g_x = Mat::default();
+    sobel(frame, &mut g_x, CV_32F, 1, 0, 3, 1.0, 0f64, BORDER_DEFAULT).unwrap();
+    Ok(CvlMat::new(g_x.to_owned()))
 }
 
 /// There is wrapper method to invoke opencv::absdiff() method.
@@ -251,19 +268,20 @@ fn gen_diff_frame(img1: &Mat, img2: &Mat) -> ProcessingResult {
 /// * frame_images: (&Vec<Mat>) a list of video stream frames to get vibro-image;
 pub fn gen_abs_frame(frame_images: &Vec<Rc<CvlMat>>) -> ProcessingResult {
     if frame_images.len() <= 1 {
-        return Err(ProcessingError::GenAbs);
+        let frame = frame_images.first().unwrap();
+        let own_frame = frame.as_ref().to_owned();
+        return Ok(own_frame);
     }
 
-    let mut differences: Vec<Rc<CvlMat>> = Vec::new();
     let base_image = frame_images.last().unwrap();
-    let frame_images_len = frame_images.len();
-    let sliced_array = &frame_images[0..frame_images_len - 1];
-    for image in sliced_array.iter() {
-        let diff_frame = gen_diff_frame(&base_image.clone(), &image.clone())?;
-        differences.push(Rc::new(diff_frame));
-    }
+    let sliced_array = &frame_images[0..frame_images.len() - 1];
+    let differences: Vec<Rc<CvlMat>> = sliced_array
+        .iter()
+        .map(|m| gen_diff_frame(base_image.frame(), m.frame()).unwrap())
+        .map(Rc::new)
+        .collect();
 
-    let result_image = gen_abs_frame(&differences).unwrap();
+    let result_image = gen_abs_frame(&differences)?;
     Ok(result_image)
 }
 
@@ -288,7 +306,7 @@ pub fn gen_abs_frame_reduce(frame_images: &[Rc<CvlMat>]) -> ProcessingResult {
 
     match result {
         None => Err(ProcessingError::GenAbs),
-        Some(frame) => Ok(CvlMat::new(frame.frame.clone())),
+        Some(frame) => Ok(frame.as_ref().to_owned()),
     }
 }
 
@@ -304,36 +322,36 @@ pub fn compute_vibration(
     image: &CvlMat,
     neighbours: i32,
     window_size: i32,
-    color_borders: &ColorBounds,
+    color_bounds: &ColorBounds,
 ) -> ProcessingResult {
     let frame_mat = image.frame();
-    let (rows, cols) = (frame_mat.rows(), frame_mat.cols());
-    let zeros_frame = Mat::zeros(rows, cols, CV_64FC4).unwrap();
-    let mut result_frame = zeros_frame.to_mat().unwrap();
+    let mut result_frame = create_zeros_mat(frame_mat.rows(), frame_mat.cols(), CV_64FC4).unwrap();
 
     let mut non_zero_pixels = Vector::<Point>::new();
     find_non_zero(frame_mat, &mut non_zero_pixels).unwrap();
+
     for non_zero_point in non_zero_pixels.to_vec() {
         let (row, col) = (non_zero_point.y, non_zero_point.x);
         if row == 0 || col == 0 {
             continue;
         }
-        let l_corn = Point::new(col - window_size, row - window_size);
-        let r_corn = Point::new(col + window_size, row + window_size);
-        let rect = Rect::from_points(l_corn, r_corn);
-        let roi_mat = Mat::roi(&frame_mat.clone(), rect);
-        if roi_mat.is_err() {
+
+        let roi_mat = create_roi_mat(frame_mat, row, col, window_size);
+        if roi_mat.is_none() {
             continue;
         }
 
         let roi_matrix = &roi_mat.unwrap();
         let non_zero_count = count_non_zero(roi_matrix).unwrap();
+        if non_zero_count < neighbours {
+            continue;
+        }
+
         let colored_scalar = match non_zero_count {
-            val if val < neighbours => Scalar::from(BLACK_COLOR),
-            val if val >= color_borders.get(4) => Scalar::from(RED_COLOR),
-            val if val >= color_borders.get(3) => Scalar::from(YELLOW_COLOR),
-            val if val >= color_borders.get(2) => Scalar::from(CYAN_COLOR),
-            val if val >= color_borders.get(1) => Scalar::from(GREEN_COLOR),
+            val if val >= color_bounds.get(4) => Scalar::from(RED_COLOR),
+            val if val >= color_bounds.get(3) => Scalar::from(YELLOW_COLOR),
+            val if val >= color_bounds.get(2) => Scalar::from(CYAN_COLOR),
+            val if val >= color_bounds.get(1) => Scalar::from(GREEN_COLOR),
             _ => Scalar::from(BLACK_COLOR),
         };
 
