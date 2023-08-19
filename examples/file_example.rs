@@ -11,7 +11,6 @@ fn main() {
     let window_name = "CVLDetector Demo";
     let window = MainWindow::new(window_name);
     window.create_window();
-    window.create_btn();
 
     let mut vcap = CvlCapture::default();
     vcap.open_stream(file_path_arg.as_str()).unwrap();
