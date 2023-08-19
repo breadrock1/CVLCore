@@ -7,18 +7,19 @@ edition = "2021"
 
 [dependencies]
 ndarray = "0.15.6"
-
-[target.'cfg(windows)'.dependencies]
-opencv = "0.82.0"
-
-[target.'cfg(macos)'.dependencies]
-opencv = "0.76.4"
-
-[target.'cfg(unix)'.dependencies]
-opencv = "0.76.4"
+opencv = "0.84.5"
+thiserror = "1.0.47"
 
 [[example]]
 name = "web_cam_example"
 
 [[example]]
 name = "file_example"
+
+[[test]]
+name = "main_tests"
+path = "test/tests.rs"
+
+[[bench]]
+name = "main_benchmarks"
+path = "test/benchmarks.rs"
