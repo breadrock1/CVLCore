@@ -15,39 +15,6 @@ use opencv::imgproc::{COLOR_BGR2GRAY, THRESH_BINARY};
 use std::ops::Deref;
 use std::rc::Rc;
 
-#[derive(Default, Clone)]
-pub struct CvlMat {
-    frame: Mat,
-}
-
-impl CvlMat {
-    pub fn new(frame: Mat) -> Self {
-        CvlMat { frame }
-    }
-
-    pub fn frame(&self) -> &Mat {
-        &self.frame
-    }
-
-    pub fn frame_mut(&mut self) -> &mut Mat {
-        &mut self.frame
-    }
-}
-
-impl From<Mat> for CvlMat {
-    fn from(value: Mat) -> Self {
-        CvlMat::new(value)
-    }
-}
-
-impl Deref for CvlMat {
-    type Target = Mat;
-
-    fn deref(&self) -> &Self::Target {
-        self.frame()
-    }
-}
-
 /// Transformations within RGB space like adding/removing the alpha channel, reversing the
 /// channel order, conversion to/from 16-bit RGB color (R5:G6:B5 or R5:G5:B5), as well as
 /// conversion to/from grayscale.
