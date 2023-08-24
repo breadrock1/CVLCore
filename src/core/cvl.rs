@@ -1,8 +1,10 @@
 use crate::core::bounds::ColorBounds;
 use crate::core::colors::*;
+use crate::core::mat::CvlMat;
 use crate::errors::{ProcessingError, ProcessingResult};
 
 use ndarray::Array;
+
 use opencv::core::{absdiff, cart_to_polar, count_non_zero, find_non_zero};
 use opencv::core::{Mat, MatExprTraitConst, MatTrait, MatTraitConst, MatTraitConstManual};
 use opencv::core::{Point, Rect, Scalar, Vector};

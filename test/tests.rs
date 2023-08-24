@@ -5,6 +5,7 @@ mod main_test {
     use cvlcore::api::chain::*;
     use cvlcore::core::bounds::*;
     use cvlcore::core::cvl::*;
+    use cvlcore::core::mat::*;
     use opencv::core::{Mat, MatTraitConst};
     use opencv::imgcodecs::imread;
     use std::path::Path;

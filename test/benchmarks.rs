@@ -6,6 +6,7 @@ extern crate test;
 mod benchmark {
     use cvlcore::core::bounds::*;
     use cvlcore::core::cvl::*;
+    use cvlcore::core::mat::*;
     use opencv::core::Mat;
     use opencv::imgcodecs::imread;
     use std::path::Path;
