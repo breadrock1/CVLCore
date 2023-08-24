@@ -1,4 +1,4 @@
-use crate::core::cvl::CvlMat;
+use crate::core::mat::CvlMat;
 use thiserror::Error;
 
 pub type ChainResult = Result<CvlMat, ProcessingError>;

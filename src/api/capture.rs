@@ -1,4 +1,4 @@
-use crate::core::cvl::CvlMat;
+use crate::core::mat::CvlMat;
 use crate::errors::{CaptureError, CaptureResult, ReadFrameError, ReadFrameResult};
 use opencv::core::Mat;
 use opencv::hub_prelude::VideoCaptureTrait;

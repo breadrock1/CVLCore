@@ -1,6 +1,6 @@
 use crate::core::bounds::ColorBounds;
-use crate::core::cvl::CvlMat;
 use crate::core::cvl::*;
+use crate::core::mat::CvlMat;
 use crate::errors::{ChainResult, ProcessingError, ProcessingResult};
 use std::rc::Rc;
 
