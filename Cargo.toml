@@ -6,9 +6,12 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ndarray = "0.15.6"
-opencv = "0.84.5"
-thiserror = "1.0.47"
+ndarray = "^0.15"
+opencv = "^0.84"
+thiserror = "^1.0"
+
+[build-dependencies]
+cbindgen = "^0.24"
 
 [[example]]
 name = "web_cam_example"
