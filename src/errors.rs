@@ -22,6 +22,8 @@ pub enum ProcessingError {
     GenGrayScale(String),
     #[error("Caught error while transforming Mat to threshold.")]
     GenThreshold(String),
+    #[error("Caught error while transforming Mat to sobel.")]
+    GenSobel(String),
 }
 
 pub type CaptureResult = Result<(), CaptureError>;
