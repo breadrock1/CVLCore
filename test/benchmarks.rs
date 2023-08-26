@@ -147,11 +147,11 @@ mod benchmark {
 
     fn load_resource_frames() -> Vec<Mat> {
         let flags = 3;
-        Path::new("resources/")
+        Path::new("test/resources/")
             .read_dir()
             .unwrap()
             .map(Result::unwrap)
-            .filter(|f| f.file_name().to_str().unwrap().contains("test_frame_"))
+            .filter(|f| f.file_name().to_str().unwrap().contains("test_file_"))
             .map(|f| f.path().to_str().unwrap().to_string())
             .map(|f| imread(f.as_str(), flags).unwrap())
             .collect()
