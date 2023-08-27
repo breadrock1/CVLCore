@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 ndarray = "^0.15"
-opencv = "^0.84"
+opencv = "^0.83"
 thiserror = "^1.0"
 
 [build-dependencies]
@@ -20,8 +20,16 @@ name = "web_cam_example"
 name = "file_example"
 
 [[test]]
-name = "main_tests"
-path = "test/tests.rs"
+name = "test_lib"
+path = "test/test_lib.rs"
+
+[[test]]
+name = "test_api"
+path = "test/test_api.rs"
+
+[[test]]
+name = "test_deque"
+path = "test/test_deque.rs"
 
 [[bench]]
 name = "main_benchmarks"

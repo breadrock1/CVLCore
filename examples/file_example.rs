@@ -1,7 +1,7 @@
 extern crate cvlcore;
 use cvlcore::api::capture::*;
 use cvlcore::api::chain::*;
-use cvlcore::ui::*;
+use cvlcore::ui::window::*;
 
 fn main() {
     let file_path_arg = std::env::args()

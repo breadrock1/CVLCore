@@ -1,7 +1,7 @@
 use crate::core::bounds::ColorBounds;
-use crate::core::cvl::*;
 use crate::core::mat::CvlMat;
-use crate::errors::{ChainResult, ProcessingError, ProcessingResult};
+use crate::errors::*;
+use crate::*;
 use std::rc::Rc;
 
 pub struct ProcessingSettings {
