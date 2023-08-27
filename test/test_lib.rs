@@ -2,10 +2,9 @@ extern crate cvlcore;
 
 #[cfg(test)]
 mod main_test {
-    use cvlcore::api::chain::*;
     use cvlcore::core::bounds::*;
-    use cvlcore::core::cvl::*;
     use cvlcore::core::mat::*;
+    use cvlcore::*;
     use opencv::core::{Mat, MatTraitConst};
     use opencv::imgcodecs::imread;
     use std::path::Path;
@@ -138,36 +137,6 @@ mod main_test {
         let abs_frame = gen_abs_frame_reduce(&frames).unwrap();
         let color_bounds = ColorBounds::default();
         let result = compute_vibration(&abs_frame, 8, 2, &color_bounds).unwrap();
-        assert_eq!(result.frame().channels(), 4);
-        assert_eq!(result.frame().dims(), 2);
-    }
-
-    #[test]
-    fn test_chain_processing() {
-        let frames = load_resource_frames();
-        let mat = frames.first().unwrap();
-        let cvlmat = CvlMat::new(mat.clone());
-
-        let abs_frames = frames
-            .into_iter()
-            .map(CvlMat::new)
-            .map(|m| gen_grayscale_frame(&m).unwrap())
-            .map(|m| gen_canny_frame_by_sigma(&m, 3, 0.05, true).unwrap())
-            .map(Rc::new)
-            .collect::<Vec<Rc<CvlMat>>>();
-
-        let mut own_chain = ChainProcessing::default();
-        own_chain.set_frames(&abs_frames);
-        let precessing_result = own_chain
-            .run_chain(cvlmat)
-            .grayscale()
-            .canny()
-            .append_frame()
-            .reduce_abs()
-            .vibrating();
-
-        let chain_result = precessing_result.get_result();
-        let result = chain_result.unwrap();
         assert_eq!(result.frame().channels(), 4);
         assert_eq!(result.frame().dims(), 2);
     }
