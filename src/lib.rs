@@ -22,7 +22,6 @@ use std::rc::Rc;
 pub const BGR_CV_IMAGE: i32 = 16;
 pub const ANY_2_DIM_IMAGE: i32 = 0;
 
-
 /// Transformations within RGB space like adding/removing the alpha channel, reversing the
 /// channel order, conversion to/from 16-bit RGB color (R5:G6:B5 or R5:G5:B5), as well as
 /// conversion to/from grayscale.
