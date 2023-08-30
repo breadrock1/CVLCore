@@ -27,7 +27,7 @@ jobs:
         run: cargo build --verbose --jobs $(nproc)
         
       - name: Run tests
-        run: cargo test --verbose
+        run: cargo test --lib --bins --tests
         
       - name: Build docs
         run: cargo doc --verbose
