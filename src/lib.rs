@@ -1,3 +1,4 @@
+#[cfg(not(doctest))]
 pub mod api;
 pub mod core;
 pub mod errors;
