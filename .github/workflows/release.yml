@@ -30,7 +30,7 @@ jobs:
         with:
           draft: false
           prerelease: false
-          body_path: CHANGELOG.md
+          body_path: CHANGELOG
           tag_name: cvlcore-${{ steps.version.outputs.project_version }}
           release_name: cvlcore-${{ steps.version.outputs.project_version }}
 
