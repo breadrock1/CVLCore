@@ -9,7 +9,7 @@ fn main() {
     window.create_window();
 
     let mut vcap = CvlCapture::default();
-    vcap.open_stream("0").unwrap();
+    vcap.open_stream("0", StreamSource::WebCamera).unwrap();
     processing_stream(&mut vcap, &window);
 
     window.close_window();

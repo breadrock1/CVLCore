@@ -13,7 +13,7 @@ fn main() {
     window.create_window();
 
     let mut vcap = CvlCapture::default();
-    vcap.open_stream(file_path_arg.as_str()).unwrap();
+    vcap.open_stream(file_path_arg.as_str(), StreamSource::VideoFile).unwrap();
     processing_stream(&mut vcap, &window);
 
     window.close_window();
