@@ -2,7 +2,7 @@
 
 ![GitHub version](https://img.shields.io/badge/version-v1.0.1-green?style=plastic&labelColor=dark)
 
-[![Building Project](https://github.com/breadrock1/CVLCore/actions/workflows/master.yml/badge.svg?branch=master)](https://github.com/breadrock1/CVLCore/actions/workflows/master.yml)
+[![Build](https://github.com/breadrock1/CVLCore/actions/workflows/master.yml/badge.svg)](https://github.com/breadrock1/CVLCore/actions/workflows/master.yml)
 
 [//]: # ([![Creating Release]&#40;https://github.com/breadrock1/CVLCore/actions/workflows/release.yml/badge.svg?branch=master&event=create&#41;]&#40;https://github.com/breadrock1/CVLDetector/actions/workflows/create-release-action.yml&#41;)
 
