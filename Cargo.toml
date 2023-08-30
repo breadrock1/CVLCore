@@ -14,10 +14,13 @@ thiserror = "^1.0"
 cbindgen = "^0.24"
 
 [[example]]
+name = "file_example"
+
+[[example]]
 name = "web_cam_example"
 
 [[example]]
-name = "file_example"
+name = "rtsp_example"
 
 [[test]]
 name = "test_lib"
