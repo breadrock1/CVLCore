@@ -337,7 +337,7 @@ fn gen_diff_frame(img1: &Mat, img2: &Mat) -> ProcessingResult {
 ///     0 1 0       0 1 0      0 0 0
 ///
 /// ## Parameters:
-/// * frame_images: (&[Rc<CvlMat>]) a list of video stream frames to get difference-image;
+/// * frame_images: (&[`Rc<CvlMat>`]) a list of video stream frames to get difference-image;
 ///
 /// ## Returns:
 /// Returns `Ok(CvlMat)` on success, otherwise returns an error.
@@ -378,7 +378,7 @@ pub fn gen_abs_frame(frame_images: &[Rc<CvlMat>]) -> ProcessingResult {
 ///     0 1 0       0 1 0      0 0 0
 ///
 /// ## Parameters:
-/// * frame_images: (&[Rc<CvlMat>]) a list of video stream frames to get difference-image;
+/// * frame_images: (&[`Rc<CvlMat>`]) a list of video stream frames to get difference-image;
 ///
 /// ## Returns:
 /// Returns `Ok(CvlMat)` on success, otherwise returns an error.
