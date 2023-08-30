@@ -1,365 +1,464 @@
-pub mod cvlcore {
-    use std::ops::Deref;
+pub mod api;
+pub mod core;
+pub mod errors;
+pub mod ui;
 
-    use ndarray::prelude::Array;
-    use opencv::core::{absdiff, cart_to_polar, count_non_zero, find_non_zero};
-    use opencv::core::{Mat, MatExprTraitConst, MatTrait, MatTraitConst, MatTraitConstManual};
-    use opencv::core::{Point, Rect, Scalar, Vector};
-    use opencv::core::{BORDER_DEFAULT, CV_32F, CV_64FC4, CV_8UC3};
-    use opencv::imgproc;
-    use opencv::types::VectorOfMat;
+use crate::core::bounds::*;
+use crate::core::mat::CvlMat;
+use crate::errors::{ProcessingError, ProcessingResult};
 
-    /// A red color pixel value used for marking magnitude and vibration Mat object.
-    pub const RED_COLOR: (f64, f64, f64, f64) = (0.0, 0.0, 255.0, 0.0);
+use ndarray::Array;
 
-    /// A cyan color pixel value used for marking magnitude and vibration Mat object.
-    pub const CYAN_COLOR: (f64, f64, f64, f64) = (255.0, 255.0, 0.0, 0.0);
+use opencv::core::{absdiff, cart_to_polar, count_non_zero, find_non_zero};
+use opencv::core::{Mat, MatExprTraitConst, MatTrait, MatTraitConst, MatTraitConstManual};
+use opencv::core::{Point, Rect, Scalar, Vector};
+use opencv::core::{BORDER_DEFAULT, CV_32F, CV_64FC4, CV_8UC3};
+use opencv::imgproc::{canny, cvt_color, sobel, threshold};
+use opencv::imgproc::{COLOR_BGR2GRAY, THRESH_BINARY};
 
-    /// A green color pixel value used for marking magnitude and vibration Mat object.
-    pub const GREEN_COLOR: (f64, f64, f64, f64) = (0.0, 255.0, 0.0, 0.0);
+use std::ops::Deref;
+use std::rc::Rc;
 
-    /// A yellow color pixel value used for marking magnitude and vibration Mat object.
-    pub const YELLOW_COLOR: (f64, f64, f64, f64) = (0.0, 255.0, 255.0, 0.0);
+pub const BGR_CV_IMAGE: i32 = 16;
+pub const ANY_2_DIM_IMAGE: i32 = 0;
 
-    /// A black color pixel value used for marking magnitude and vibration Mat object.
-    pub const BLACK_COLOR: (f64, f64, f64, f64) = (0.0, 0.0, 0.0, 0.0);
-
-    pub struct ColorBounds {
-        channel_1: i32,
-        channel_2: i32,
-        channel_3: i32,
-        channel_4: i32,
-    }
-
-    impl ColorBounds {
-        pub fn new(ch1: i32, ch2: i32, ch3: i32, ch4: i32) -> Self {
-            ColorBounds {
-                channel_1: ch1,
-                channel_2: ch2,
-                channel_3: ch3,
-                channel_4: ch4,
-            }
+/// Transformations within RGB space like adding/removing the alpha channel, reversing the
+/// channel order, conversion to/from 16-bit RGB color (R5:G6:B5 or R5:G5:B5), as well as
+/// conversion to/from grayscale.
+///
+/// ![grayscale](/resources/grayscale.jpg "Example of Grayscale image")
+///
+/// ## Parameters:
+/// * frame: (&CvlMat) the passed video stream frame to transform.
+///
+/// ## Returns:
+/// Returns `Ok(CvlMat)` on success, otherwise returns an error.
+///
+/// ## Errors:
+/// Returns [`GenGrayScale`](ProcessingError::GenGrayScale) if failed while trying to
+/// transform passed image to grayscale image.
+#[inline(always)]
+pub fn gen_grayscale_frame(frame: &CvlMat) -> ProcessingResult {
+    let mut gray_frame = Mat::default();
+    match cvt_color(frame.frame(), &mut gray_frame, COLOR_BGR2GRAY, 0) {
+        Ok(_) => Ok(CvlMat::from(gray_frame)),
+        Err(_) => {
+            let msg = "Failed while trying to transform frame to grayscale.";
+            Err(ProcessingError::GenGrayScale(msg.to_string()))
         }
     }
+}
 
-    impl Default for ColorBounds {
-        fn default() -> Self {
-            ColorBounds {
-                channel_1: 8,
-                channel_2: 9,
-                channel_3: 10,
-                channel_4: 11,
-            }
+/// This method returns threshold image from passed bgr-image by passed black/white bounds
+/// values. The simplest thresholding methods replace each pixel in an image with a black
+/// pixel if the image intensity less than a fixed value called the threshold if the pixel
+/// intensity is greater than that threshold. This function is necessary for further image
+/// transformation to generate pixels vibration image.
+///
+/// ## Parameters
+/// * frame: (&CvlMat) the passed video stream frame to transform.
+/// * tresh: (f64) the black bound-value to swap pixel value to 1.
+/// * maxval: (f64) the white bound-value to swap pixel value to 0.
+///
+/// ## Returns:
+/// Returns `Ok(CvlMat)` on success, otherwise returns an error.
+///
+/// ## Errors:
+/// Returns [`GenThreshold`](ProcessingError::GenThreshold) if failed while trying to
+/// transform passed image to threshold image.
+#[inline(always)]
+pub fn gen_threshold_frame(frame: &CvlMat, thresh: f64, maxval: f64) -> ProcessingResult {
+    let mut gray: Mat = Mat::default();
+    match threshold(frame.frame(), &mut gray, thresh, maxval, THRESH_BINARY) {
+        Ok(_) => Ok(CvlMat::from(gray)),
+        Err(_) => {
+            let msg = "Failed while trying to transform frame to threshold.";
+            Err(ProcessingError::GenThreshold(msg.to_string()))
         }
     }
+}
 
-    /// Transformations within RGB space like adding/removing the alpha channel, reversing the
-    /// channel order, conversion to/from 16-bit RGB color (R5:G6:B5 or R5:G5:B5), as well as
-    /// conversion to/from grayscale.
-    ///
-    /// ## Parameters:
-    /// * frame: (&Mat) the passed video stream frame to transform.
-    #[inline]
-    pub fn gen_grayscale_frame(frame: &Mat) -> opencv::Result<Mat> {
-        let mut gray_frame = Mat::default();
-        imgproc::cvt_color(&frame, &mut gray_frame, imgproc::COLOR_BGR2GRAY, 0).unwrap();
-        Ok(gray_frame)
+/// This method returns canny image from passed grayscale image by passed parameters.
+/// The Canny edge detector is an edge detection operator that uses a multi-stage algorithm
+/// to detect a wide range of edges in images. It was developed by John F. Canny in 1986.
+/// Canny also produced a computational theory of edge detection explaining why the
+/// technique works.
+///
+/// ![canny](/resources/canny.jpg "Example of Canny image")
+///
+/// ## Parameters:
+/// * frame: (&CvlMat) the passed video stream frame to transform.
+/// * low: (f64) the first threshold for the hysteresis procedure.
+/// * high: (f64) the second threshold for the hysteresis procedure.
+/// * size: (i32) the aperture size of Sobel operator to generate Canny view.
+/// * is_l2: (bool) the specifies the equation for finding gradient magnitude.
+///
+/// ## Returns:
+/// Returns `Ok(CvlMat)` on success, otherwise returns an error.
+///
+/// ## Errors:
+/// Returns [`GenCanny`](ProcessingError::GenCanny) if failed while trying to
+/// transform passed image to canny image.
+#[inline(always)]
+pub fn gen_canny_frame(
+    frame: &CvlMat,
+    low: f64,
+    high: f64,
+    size: i32,
+    is_l2: bool,
+) -> ProcessingResult {
+    let mut canny_frame = Mat::default();
+    match canny(frame.frame(), &mut canny_frame, low, high, size, is_l2) {
+        Ok(_) => Ok(CvlMat::from(canny_frame)),
+        Err(_) => {
+            let msg = "Failed while trying to transform frame to canny.";
+            Err(ProcessingError::GenCanny(msg.to_string()))
+        }
+    }
+}
+
+/// This method returns canny image from passed grayscale image by passed parameters.
+/// The Canny edge detector is an edge detection operator that uses a multi-stage algorithm
+/// to detect a wide range of edges in images. It was developed by John F. Canny in 1986.
+/// Canny also produced a computational theory of edge detection explaining why the
+/// technique works.
+///
+/// ![canny](/resources/canny.jpg "Example of Canny image")
+///
+/// ## Parameters:
+/// * frame: (&CvlMat) the passed video stream frame to transform.
+/// * size: (i32) the aperture size of Sobel operator to generate Canny view.
+/// * sigma: (f64) the value to vary the percentage thresholds that are determined based on simple statistics.
+/// * is_l2: (bool) the specifies the equation for finding gradient magnitude.
+///
+/// ## Returns:
+/// Returns `Ok(CvlMat)` on success, otherwise returns an error.
+///
+/// ## Errors:
+/// Returns [`GenCanny`](ProcessingError::GenCanny) if failed while trying to
+/// transform passed image to canny image.
+#[inline(always)]
+pub fn gen_canny_frame_by_sigma(
+    frame: &CvlMat,
+    size: i32,
+    sigma: f64,
+    is_l2: bool,
+) -> ProcessingResult {
+    let median = calculate_mat_median(frame).unwrap_or(0f64);
+    let (low, high) = (1f64 - sigma + median, 1f64 + &sigma + median);
+
+    let mut canny_frame = Mat::default();
+    match canny(frame.deref(), &mut canny_frame, low, high, size, is_l2) {
+        Ok(_) => Ok(CvlMat::from(canny_frame)),
+        Err(_) => {
+            let msg = "Failed while trying to transform frame to canny.";
+            Err(ProcessingError::GenCanny(msg.to_string()))
+        }
+    }
+}
+
+/// This method returns new Mat object with zeros by passed rows, columns and type parameters.
+/// There is wrapper for [Mat::zeros] method.
+///
+/// ## Parameters:
+/// * rows: (i32) a rows of Mat.
+/// * cols: (i32) a columns of Mat.
+/// * cv_type: (i32) a Mat type (like CV_64FC4).
+///
+/// ## Returns:
+/// Returns `Option<Mat>` of executing [`Mat::zeros`] method from opencv library.
+#[inline(always)]
+fn create_zeros_mat(rows: i32, cols: i32, cv_type: i32) -> Option<Mat> {
+    let zeros_frame = Mat::zeros(rows, cols, cv_type).unwrap();
+    zeros_frame.to_mat().ok()
+}
+
+/// There is wrapper for [Mat::roi] method which returns a sub-Mat object from source Mat and Rect.
+/// By window parameter we get a sub-Mat with center point of (row, column).
+///
+/// ## Parameters:
+/// * frame: (&Mat) a Mat to roi.
+/// * rows: (i32) a rows of Mat point.
+/// * cols: (i32) a columns of Mat point.
+/// * window: (i32) an offset size.
+///
+/// ## Returns:
+/// Returns `Option<Mat>` of executing [`Mat::roi`] method from opencv library.
+#[inline(always)]
+fn create_roi_mat(frame: &Mat, row: i32, col: i32, window: i32) -> Option<Mat> {
+    let l_corn = Point::new(col - window, row - window);
+    let r_corn = Point::new(col + window, row + window);
+    let rect = Rect::from_points(l_corn, r_corn);
+    Mat::roi(frame, rect).ok()
+}
+
+/// This method returns arithmetic mean (average) of all elements in array.
+/// In mathematics and statistics, the arithmetic mean / arithmetic average is the sum of a
+/// collection of numbers divided by the count of numbers in the collection. The collection
+/// is often a set of results from an experiment, an observational study, or a survey. The
+/// term "arithmetic mean" is preferred in some mathematics and statistics contexts because
+/// it helps distinguish it from other types of means, such as geometric and harmonic.
+///
+/// ## Parameters:
+/// * frame: (&CvlMat) a passed video stream frame to transform.
+///
+/// ## Results:
+/// Returns `Option<f64>` of executing [`Array::mean`] method from ndarray library.
+pub fn calculate_mat_median(frame: &CvlMat) -> Option<f64> {
+    let mat_frame = frame.frame();
+    let rows = mat_frame.rows() as usize;
+    let cols = mat_frame.cols() as usize;
+
+    let buffer = frame
+        .frame()
+        .data_typed::<u8>()
+        .unwrap()
+        .iter()
+        .map(|d| *d as f64)
+        .collect();
+
+    Array::from_shape_vec((rows, cols), buffer).unwrap().mean()
+}
+
+/// This method returns distribution image from passed grayscale image by passed parameters.
+/// The distribution image is representation of the distribution of pixel gradients intensities
+/// in a digital image. As I mentioned in the introduction, image gradients are used as the
+/// basic building blocks in many computer vision and image processing applications. However,
+/// the network application of image gradients lies within edge detection.
+///
+/// ## Parameters:
+/// * image: (&CvlMat) a passed video stream frame to transform.
+/// * thresh: (f64) a black/white bound-value to thresholding source image.
+/// * maxval: (f64) a maximum value to use with the thresholding types.
+///
+/// ## Returns:
+/// Returns `Ok(CvlMat)` on success, otherwise returns an error.
+///
+/// ## Errors:
+/// Returns [`GenDistribution`](ProcessingError::GenDistribution) if failed while trying to
+/// transform passed image to distribution image.
+pub fn gen_distribution_frame(image: &CvlMat, thresh: f64, maxval: f64) -> ProcessingResult {
+    let mat_frame = image.frame();
+    let sobel_frame = gen_sobel_frame(mat_frame).unwrap();
+    let g_x = sobel_frame.frame().clone();
+    let g_y = sobel_frame.frame().clone();
+
+    let mut magnitude = Mat::default();
+    let mut orientation = Mat::default();
+    cart_to_polar(&g_x, &g_y, &mut magnitude, &mut orientation, true).unwrap();
+
+    let mut mask = Mat::default();
+    threshold(&magnitude, &mut mask, thresh, maxval, THRESH_BINARY).unwrap();
+
+    let scalar = Scalar::new(0.0, 0.0, 0.0, 0.0);
+    let shape = (orientation.rows(), orientation.cols(), 3);
+    let img_map = Mat::new_rows_cols_with_default(shape.0, shape.1, CV_8UC3, scalar).unwrap();
+
+    // let mut nonzero_mask = VectorOfMat::default();
+    // println!("{} {}", mat_frame.channels(), mat_frame.dims());
+    // find_non_zero(&mat_frame, &mut nonzero_mask).unwrap();
+
+    // let non_zero_count = count_non_zero(&orientation).unwrap();
+    // let colored_scalar = match non_zero_count {
+    //     val if val < neighbours => Scalar::from(BLACK_COLOR),
+    //     val if val >= color_borders.get(4) => Scalar::from(RED_COLOR),
+    //     val if val >= color_borders.get(3) => Scalar::from(YELLOW_COLOR),
+    //     val if val >= color_borders.get(2) => Scalar::from(CYAN_COLOR),
+    //     val if val >= color_borders.get(1) => Scalar::from(GREEN_COLOR),
+    //     _ => Scalar::from(BLACK_COLOR),
+    // };
+
+    Ok(CvlMat::from(img_map.to_owned()))
+}
+
+/// Calculates the first, second, third, or mixed image derivatives using an extended Sobel operator.
+/// The Sobel operators combine Gaussian smoothing and differentiation, so the result is more or less
+/// resistant to the noise. Most often, the function is called with ( xorder = 1, yorder = 0, ksize = 3)
+/// or ( xorder = 0, yorder = 1, ksize = 3) to calculate the first x- or y- image derivative.
+/// The first case corresponds to a kernel of:
+///
+/// ## Parameters:
+/// * frame: (&Mat) the passed video stream frame to transform.
+///
+/// ## Returns:
+/// Returns `Ok(CvlMat)` of executing [`sobel`] method of opencv library.
+///
+/// ## Errors:
+/// Returns [`GenSobel`](ProcessingError::GenSobel) if failed while trying to
+/// transform passed image to distribution image.
+#[inline(always)]
+fn gen_sobel_frame(frame: &Mat) -> ProcessingResult {
+    let mut g_x = Mat::default();
+    match sobel(frame, &mut g_x, CV_32F, 1, 0, 3, 1.0, 0f64, BORDER_DEFAULT) {
+        Ok(_) => Ok(CvlMat::new(g_x.to_owned())),
+        Err(_) => {
+            let msg = "Failed while trying to transform frame to sobel.";
+            Err(ProcessingError::GenSobel(msg.to_string()))
+        }
+    }
+}
+
+/// There is wrapper method to invoke opencv::absdiff() method.
+///
+/// ## Parameters:
+/// * img1: (&Mat) a first passed frame;
+/// * img2: (&Mat) a second passed frame to sub;
+///
+/// ## Returns:
+/// Returns `Ok(CvlMat)` on success, otherwise returns an error.
+///
+/// ## Errors:
+/// Returns [`GenDifferences`](ProcessingError::GenDifferences) if failed while trying to
+/// execute [`absdiff`] method for passed images.
+#[inline]
+fn gen_diff_frame(img1: &Mat, img2: &Mat) -> ProcessingResult {
+    let mut tmp = Mat::default();
+    match absdiff(img1, img2, &mut tmp) {
+        Ok(_) => Ok(CvlMat::from(tmp)),
+        Err(_) => {
+            let msg = "Failed while trying to execute absdiff function.";
+            Err(ProcessingError::GenDifferences(msg.to_string()))
+        }
+    }
+}
+
+/// This recursive method returns result-image of opencv::absdiff() method by passed
+/// list of followed one by one frames of video stream. A result-image presents matrix
+/// Absolute difference between two 2D-arrays when they have the same size and type
+/// which used for removing from further analysis static pixels.
+///
+/// ![difference](/resources/difference.jpg "Example of Difference image")
+///
+/// For example, we have both matrix:
+///
+///     0 1 0       0 1 0      0 0 0
+///     1 0 1  and  1 1 1  =>  0 1 0
+///     0 1 0       0 1 0      0 0 0
+///
+/// ## Parameters:
+/// * frame_images: (&[Rc<CvlMat>]) a list of video stream frames to get difference-image;
+///
+/// ## Returns:
+/// Returns `Ok(CvlMat)` on success, otherwise returns an error.
+///
+/// ## Errors:
+/// Returns [`GenAbs`](ProcessingError::GenAbs) if failed while trying to generate difference
+/// image from passed set of canny images.
+pub fn gen_abs_frame(frame_images: &[Rc<CvlMat>]) -> ProcessingResult {
+    if frame_images.len() <= 1 {
+        let frame = frame_images.first().unwrap();
+        let own_frame = frame.as_ref().to_owned();
+        return Ok(own_frame);
     }
 
-    /// This method returns threshold image from passed bgr-image by passed black/white bounds
-    /// values. The simplest thresholding methods replace each pixel in an image with a black
-    /// pixel if the image intensity less than a fixed value called the threshold if the pixel
-    /// intensity is greater than that threshold. This function is necessary for further image
-    /// transformation to generate pixels vibration image.
-    ///
-    /// ## Parameters
-    /// * frame: (&Mat) the passed video stream frame to transform.
-    /// * tresh: (f64) the black bound-value to swap pixel value to 1.
-    /// * maxval: (f64) the white bound-value to swap pixel value to 0.
-    #[inline]
-    pub fn gen_threshold_frame(frame: &Mat, thresh: f64, maxval: f64) -> opencv::Result<Mat> {
-        let mut grayscale_frame: Mat = Mat::default();
-        imgproc::threshold(
-            &frame,
-            &mut grayscale_frame,
-            thresh,
-            maxval,
-            imgproc::THRESH_BINARY,
-        )
-        .unwrap();
+    let base_image = frame_images.last().unwrap();
+    let sliced_array = &frame_images[0..frame_images.len() - 1];
+    let differences: Vec<Rc<CvlMat>> = sliced_array
+        .iter()
+        .map(|m| gen_diff_frame(base_image.frame(), m.frame()).unwrap())
+        .map(Rc::new)
+        .collect();
 
-        Ok(grayscale_frame)
+    let result_image = gen_abs_frame(&differences)?;
+    Ok(result_image)
+}
+
+/// This method returns reduced result-image of opencv::absdiff() method by passed
+/// list of followed one by one frames of video stream. A result-image presents matrix
+/// Absolute difference between two 2D-arrays when they have the same size and type
+/// which used for removing from further analysis static pixels.
+///
+/// ![difference](/resources/difference.jpg "Example of Difference image")
+///
+/// For example, we have both matrix:
+///
+///     0 1 0       0 1 0      0 0 0
+///     1 0 1  and  1 1 1  =>  0 1 0
+///     0 1 0       0 1 0      0 0 0
+///
+/// ## Parameters:
+/// * frame_images: (&[Rc<CvlMat>]) a list of video stream frames to get difference-image;
+///
+/// ## Returns:
+/// Returns `Ok(CvlMat)` on success, otherwise returns an error.
+///
+/// ## Errors:
+/// Returns [`GenAbs`](ProcessingError::GenAbs) if failed while trying to generate difference
+/// image from passed set of canny images.
+pub fn gen_abs_frame_reduce(frame_images: &[Rc<CvlMat>]) -> ProcessingResult {
+    let result = frame_images
+        .iter()
+        .cloned()
+        .reduce(|img1, img2| Rc::new(gen_diff_frame(img1.frame(), img2.frame()).unwrap()));
+
+    match result {
+        None => Err(ProcessingError::GenAbs),
+        Some(frame) => Ok(frame.as_ref().to_owned()),
     }
+}
 
-    /// This method returns canny image from passed grayscale image by passed parameters.
-    /// The Canny edge detector is an edge detection operator that uses a multi-stage algorithm
-    /// to detect a wide range of edges in images. It was developed by John F. Canny in 1986.
-    /// Canny also produced a computational theory of edge detection explaining why the
-    /// technique works.
-    ///
-    /// ## Parameters:
-    /// * frame: (&Mat) the passed video stream frame to transform.
-    /// * low: (f64) the first threshold for the hysteresis procedure.
-    /// * high: (f64) the second threshold for the hysteresis procedure.
-    /// * size: (i32) the aperture size of Sobel operator to generate Canny view.
-    /// * is_l2: (bool) the specifies the equation for finding gradient magnitude.
-    #[inline]
-    pub fn gen_canny_frame(
-        frame: &Mat,
-        low: f64,
-        high: f64,
-        size: i32,
-        is_l2: bool,
-    ) -> opencv::Result<Mat> {
-        let mut canny_frame = Mat::default();
-        imgproc::canny(&frame, &mut canny_frame, low, high, size, is_l2).unwrap();
+/// This method returns image with vibrating pixels (colored by bounds values) by passed image.
+/// The main algorithm iterates over each pixel of Canny-image and calculate amount of nonzero
+/// pixels around current pixel. A target computed value replaced instead pixel value.
+/// The vibration image is network procedure which used for anxiety triggering by dispersion
+/// of statistic values.
+///
+/// ![vibration](/resources/vibration.jpg "Example of Vibration image")
+///
+/// ## Parameters:
+/// * image: (&CvlMat) a passed diff-image (results of abs) to transform.
+/// * neighbours: (i32) a neighbours count value to filter noise of vibration.
+/// * window_size: (i32) a offset from central pixel to compute non-null pixel neighbours.
+/// * color_bounds: (&ColorBounds) a object with channels values to set color for pixels.
+///
+/// ## Returns:
+/// Returns `Ok(CvlMat)` on success, otherwise returns an error.
+///
+/// ## Errors:
+/// Returns [`ComputeVibration`](ProcessingError::ComputeVibration) if failed while trying to
+/// transform difference image to vibration image.
+pub fn compute_vibration(
+    image: &CvlMat,
+    neighbours: i32,
+    window_size: i32,
+    color_bounds: &ColorBounds,
+) -> ProcessingResult {
+    let frame_mat = image.frame();
+    let mut result_frame = create_zeros_mat(frame_mat.rows(), frame_mat.cols(), CV_64FC4).unwrap();
 
-        Ok(canny_frame)
-    }
+    let mut non_zero_pixels = Vector::<Point>::new();
+    find_non_zero(frame_mat, &mut non_zero_pixels).unwrap();
 
-    /// This method returns canny image from passed grayscale image by passed parameters.
-    /// The Canny edge detector is an edge detection operator that uses a multi-stage algorithm
-    /// to detect a wide range of edges in images. It was developed by John F. Canny in 1986.
-    /// Canny also produced a computational theory of edge detection explaining why the
-    /// technique works.
-    ///
-    /// ## Parameters:
-    /// * frame: (&Mat) the passed video stream frame to transform.
-    /// * size: (i32) the aperture size of Sobel operator to generate Canny view.
-    /// * sigma: (f64) the value to vary the percentage thresholds that are determined based on simple statistics.
-    /// * is_l2: (bool) the specifies the equation for finding gradient magnitude.
-    #[inline]
-    pub fn gen_canny_frame_by_sigma(
-        frame: &Mat,
-        size: i32,
-        sigma: f64,
-        is_l2: bool,
-    ) -> opencv::Result<Mat> {
-        let median = calculate_mat_median(frame);
-        let (low, high) = (1.0 - sigma + median, 1.0 + &sigma + median);
-
-        let mut canny_frame = Mat::default();
-        imgproc::canny(&frame, &mut canny_frame, low, high, size, is_l2).unwrap();
-
-        Ok(canny_frame)
-    }
-
-    /// This method returns arithmetic mean (average) of all elements in array.
-    /// In mathematics and statistics, the arithmetic mean / arithmetic average is the sum of a
-    /// collection of numbers divided by the count of numbers in the collection. The collection
-    /// is often a set of results from an experiment, an observational study, or a survey. The
-    /// term "arithmetic mean" is preferred in some mathematics and statistics contexts because
-    /// it helps distinguish it from other types of means, such as geometric and harmonic.
-    ///
-    /// ## Parameters:
-    /// * frame: (&Mat) a passed video stream frame to transform.
-    pub fn calculate_mat_median(frame: &Mat) -> f64 {
-        let rows = frame.rows() as usize;
-        let cols = frame.cols() as usize;
-        let mut buffer = vec![0.0; rows * cols];
-        let data = frame.data_typed::<u8>().expect("");
-
-        for r in 0..rows {
-            for c in 0..cols {
-                let index = r * cols + c;
-                buffer[index] = data[r * cols + c] as f64;
-            }
+    for non_zero_point in non_zero_pixels.to_vec() {
+        let (row, col) = (non_zero_point.y, non_zero_point.x);
+        if row == 0 || col == 0 {
+            continue;
         }
 
-        Array::from_shape_vec((rows, cols), buffer)
+        let roi_mat = create_roi_mat(frame_mat, row, col, window_size);
+        if roi_mat.is_none() {
+            continue;
+        }
+
+        let roi_matrix = &roi_mat.unwrap();
+        let non_zero_count = count_non_zero(roi_matrix).unwrap();
+        if non_zero_count < neighbours {
+            continue;
+        }
+
+        let colored_scalar = match non_zero_count {
+            val if val >= color_bounds.get(4) => Scalar::from(RED_COLOR),
+            val if val >= color_bounds.get(3) => Scalar::from(YELLOW_COLOR),
+            val if val >= color_bounds.get(2) => Scalar::from(CYAN_COLOR),
+            val if val >= color_bounds.get(1) => Scalar::from(GREEN_COLOR),
+            _ => Scalar::from(BLACK_COLOR),
+        };
+
+        result_frame
+            .at_2d_mut::<Scalar>(row, col)
             .unwrap()
-            .mean()
-            .unwrap()
+            .copy_from_slice(colored_scalar.as_slice());
     }
 
-    /// This method returns distribution image from passed grayscale image by passed parameters.
-    /// The distribution image is representation of the distribution of pixel gradients intensities
-    /// in a digital image. As I mentioned in the introduction, image gradients are used as the
-    /// basic building blocks in many computer vision and image processing applications. However,
-    /// the network application of image gradients lies within edge detection.
-    ///
-    /// ## Parameters:
-    /// * image: (&Mat) a passed video stream frame to transform.
-    /// * thresh: (f64) a black/white bound-value to thresholding source image.
-    /// * maxval: (f64) a maximum value to use with the thresholding types.
-    pub fn gen_distribution_frame(
-        image: &Mat,
-        thresh: f64,
-        maxval: f64,
-    ) -> Result<Mat, opencv::Error> {
-        let mut g_x = Mat::default();
-        let mut g_y = Mat::default();
-        imgproc::sobel(
-            image,
-            &mut g_x,
-            CV_32F,
-            1,
-            0,
-            3,
-            1.0,
-            0 as f64,
-            BORDER_DEFAULT,
-        )
-        .unwrap();
-        imgproc::sobel(
-            image,
-            &mut g_y,
-            CV_32F,
-            0,
-            1,
-            3,
-            1.0,
-            0 as f64,
-            BORDER_DEFAULT,
-        )
-        .unwrap();
-
-        let mut magnitude = Mat::default();
-        let mut orientation = Mat::default();
-        cart_to_polar(&g_x, &g_y, &mut magnitude, &mut orientation, true).unwrap();
-
-        let mut mask = Mat::default();
-        imgproc::threshold(
-            &magnitude,
-            &mut mask,
-            thresh,
-            maxval,
-            imgproc::THRESH_BINARY,
-        )
-        .unwrap();
-
-        let image_map_shape = (orientation.rows(), orientation.cols(), 3);
-        let mut _image_map = Mat::new_rows_cols_with_default(
-            image_map_shape.0,
-            image_map_shape.1,
-            CV_8UC3,
-            Scalar::new(0.0, 0.0, 0.0, 0.0),
-        )
-        .unwrap();
-
-        let vibration_mask = image.clone();
-        let mut nonzero_mask = VectorOfMat::default();
-        find_non_zero(image, &mut nonzero_mask).unwrap();
-        Ok(vibration_mask)
-    }
-
-    /// There is wrapper method to invoke opencv::absdiff() method.
-    ///
-    /// ## Parameters:
-    /// * img1: (&Mat) a first passed frame;
-    /// * img2: (&Mat) a second passed frame to sub;
-    #[inline]
-    fn gen_diff_frame(img1: &Mat, img2: &Mat) -> opencv::Result<Mat> {
-        let mut tmp = Mat::default();
-        absdiff(&img1, &img2, &mut tmp).unwrap();
-        Ok(tmp)
-    }
-
-    /// This recursive method returns result-image of opencv::absdiff() method by passed
-    /// list of followed one by one frames of video stream. A result-image presents matrix
-    /// Absolute difference between two 2D-arrays when they have the same size and type
-    /// which used for removing from further analysis static pixels.
-    ///
-    /// For example, we have both matrix:
-    ///
-    /// 0 1 0       0 1 0      0 0 0
-    /// 1 0 1  and  1 1 1  =>  0 1 0
-    /// 0 1 0       0 1 0      0 0 0
-    ///
-    /// ## Parameters:
-    /// * frame_images: (&Vec<Mat>) a list of video stream frames to get vibro-image;
-    pub fn gen_abs_frame(frame_images: &Vec<Mat>) -> opencv::Result<Mat> {
-        if frame_images.len() <= 1 {
-            let result_image = frame_images.first().unwrap();
-            let result_img = result_image.deref();
-            return Ok(result_img.clone());
-        }
-
-        let mut differences: Vec<Mat> = Vec::new();
-        let base_image = frame_images.last().unwrap();
-        let frame_images_len = frame_images.len();
-        let sliced_array = &frame_images[0..frame_images_len - 1];
-        for image in sliced_array.iter() {
-            let test = gen_diff_frame(base_image, image).unwrap();
-            differences.push(test);
-        }
-
-        let result_image = gen_abs_frame(&differences).unwrap();
-        Ok(result_image)
-    }
-
-    /// This method returns reduced result-image of opencv::absdiff() method by passed
-    /// list of followed one by one frames of video stream. A result-image presents matrix
-    /// Absolute difference between two 2D-arrays when they have the same size and type
-    /// which used for removing from further analysis static pixels.
-    ///
-    /// For example, we have both matrix:
-    ///
-    /// 0 1 0       0 1 0      0 0 0
-    /// 1 0 1  and  1 1 1  =>  0 1 0
-    /// 0 1 0       0 1 0      0 0 0
-    ///
-    /// ## Parameters:
-    /// * frame_images: (&Vec<Mat>) a list of video stream frames to get vibro-image;
-    pub fn gen_abs_frame_reduce(frame_images: &[Mat]) -> opencv::Result<Mat> {
-        let result = frame_images
-            .iter()
-            .cloned()
-            .reduce(|img1, img2| gen_diff_frame(&img1, &img2).unwrap());
-
-        Ok(result.unwrap())
-    }
-
-    /// This method returns image with vibrating pixels (colored by bounds values) by passed image.
-    /// The main algorithm iterates over each pixel of Canny-image and calculate amount of nonzero
-    /// pixels around current pixel. A target computed value replaced instead pixel value.
-    /// The vibration image is network procedure which used for anxiety triggering by dispersion
-    /// of statistic values.
-    ///
-    /// * image: (&Mat) a passed diff-image (results of abs) to transform.
-    /// * neighbours: (i32) a neighbours count value to filter noise of vibration.
-    pub fn compute_vibration(
-        image: &Mat,
-        neighbours: i32,
-        window_size: i32,
-        color_borders: &ColorBounds,
-    ) -> Result<Mat, opencv::Error> {
-        let (rows, cols) = (image.rows(), image.cols());
-        let zeros_frame = Mat::zeros(rows, cols, CV_64FC4).unwrap();
-        let mut result_frame = zeros_frame.to_mat().unwrap();
-
-        let mut non_zero_pixels = Vector::<Point>::new();
-        find_non_zero(&image, &mut non_zero_pixels).unwrap();
-        for non_zero_point in non_zero_pixels.to_vec() {
-            let (row, col) = (non_zero_point.y, non_zero_point.x);
-            if row == 0 || col == 0 {
-                continue;
-            }
-            let l_corn = Point::new(col - window_size, row - window_size);
-            let r_corn = Point::new(col + window_size, row + window_size);
-            let rect = Rect::from_points(l_corn, r_corn);
-            let roi_mat = Mat::roi(image, rect);
-            if roi_mat.is_err() {
-                continue;
-            }
-
-            let roi_matrix = &roi_mat.unwrap();
-            let non_zero_count = count_non_zero(roi_matrix).unwrap();
-            let colored_scalar = match non_zero_count {
-                val if val < neighbours => Scalar::from(BLACK_COLOR),
-                val if val >= color_borders.channel_4 => Scalar::from(RED_COLOR),
-                val if val >= color_borders.channel_3 => Scalar::from(YELLOW_COLOR),
-                val if val >= color_borders.channel_2 => Scalar::from(CYAN_COLOR),
-                val if val >= color_borders.channel_1 => Scalar::from(GREEN_COLOR),
-                _ => Scalar::from(BLACK_COLOR),
-            };
-
-            result_frame
-                .at_2d_mut::<Scalar>(row, col)
-                .unwrap()
-                .copy_from_slice(colored_scalar.as_slice());
-        }
-
-        Ok(result_frame)
-    }
+    Ok(CvlMat::from(result_frame))
 }
