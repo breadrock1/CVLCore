@@ -8,96 +8,32 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  OPENCV_LINK_LIBS: opencv_highgui, opencv_objdetect, opencv_dnn, opencv_videostab, opencv_calib3d, opencv_features2d, opencv_stitching, opencv_flann, opencv_videoio, opencv_rgbd, opencv_aruco, opencv_video, opencv_ml, opencv_imgcodecs, opencv_imgproc, opencv_core, ittnotify, tbb, liblibwebp, liblibtiff, liblibjpeg-turbo, liblibpng, liblibopenjp2, ippiw, ippicv, liblibprotobuf, quirc, zlib
   OPENCV_LINK_PATHS: /usr/local/lib
   OPENCV_INCLUDE_PATHS: /usr/local/include/opencv4
 
 jobs:
   dependencies:
     runs-on: ubuntu-20.04
-    steps:    
-      - uses: Dovyski/setup-opencv-action@v1.1        
-        with:
-          opencv-version: '4.2.0'
-          install-deps: true
-          opencv-extra-modules: false
-
+    steps:
       - name: Install prerequisites
         run: |
           sudo apt update
-          sudo apt install -y make gcc patchelf chrpath \
-            qt5-default libopencv-dev clang libclang-dev
-            
-      - uses: actions/checkout@v3
-      - name: Build
-        working-directory: /home/runner/work/CVLCore/CVLCore
-        run: cargo build --verbose
+          sudo apt install -y build-essential cmake clang \
+            libclang-dev llvm llvm-dev qt5-default libopencv-dev
       
-      - name: Cache OpenCV
-        id: cache-opencv
-        uses: actions/cache@v3
+      - uses: Dovyski/setup-opencv-action@v1.1        
         with:
-          path: |
-            /usr/local/lib
-            /usr/local/share/opencv4
-            /usr/local/include/opencv4
-          key: ${{ runner.os }}-opencv-cache
-          restore-keys: ${{ runner.os }}-opencv
-      
-      - if: ${{ steps.cache-opencv.outputs.cache-hit != 'true' }}
-        name: List the state of opencv modules
-        continue-on-error: true
-        run: whereis opencv
+          opencv-version: '4.6.0'
+          
+      - uses: actions/checkout@v3
+      - name: Build project
+        run: cargo build --verbose --jobs $(nproc)
         
-      - name: Check if opencv exists
-        run: |
-          ls -l $OPENCV_LINK_PATHS
-          ls -l $OPENCV_INCLUDE_PATHS
-
-  build:
-    runs-on: ubuntu-20.04
-    needs: dependencies
-    steps:
-      - name: Restore cached Primes
-        id: cache-restore
-        uses: actions/cache/restore@v3
-        with:
-          path: |
-            /usr/local/lib
-            /usr/local/share/opencv4
-            /usr/local/include/opencv4
-          key: ${{ runner.os }}-opencv-cache
-    
-      - uses: actions/checkout@v3
-      - name: Build
-        working-directory: /home/runner/work/CVLCore/CVLCore
-        run: cargo build --verbose
-
-  tests:
-    runs-on: ubuntu-20.04
-    needs: build
-    steps:
       - name: Run tests
-        working-directory: /home/runner/work/CVLCore/CVLCore
         run: cargo test --verbose
-
-  docs:
-    runs-on: ubuntu-20.04
-    needs: tests
-    steps:
+        
       - name: Build docs
-        working-directory: /home/runner/work/CVLCore/CVLCore
-        run: cargo doc --verbose
-
-  save-cache:
-    runs-on: ubuntu-20.04
-    needs: docs
-    steps:
-      - name: Save Cacher
-        id: cache-primes-save
-        uses: actions/cache/save@v3
-        with:
-          path: |
-            /usr/local/lib
-            /usr/local/share/opencv4
-            /usr/local/include/opencv4
-          key: ${{ steps.cache-restore.outputs.cache-primary-key }}
+        run: |
+          cargo doc --verbose 
+          mv target/doc target/release/
