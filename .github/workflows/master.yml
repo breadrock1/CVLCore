@@ -1,4 +1,4 @@
-name: Push to master
+name: Build
 
 run-name: ${{ github.actor }} is building action
 on:
