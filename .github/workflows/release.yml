@@ -11,17 +11,17 @@ jobs:
     
     outputs:
       version_output: ${{ steps.version.outputs.project_version }}
-      upload_url_output: ${{ steps.release.outputs.upload_url }}  
+      upload_url_output: ${{ steps.release.outputs.upload_url }}
     
     steps:
       - name: Checkout branch
         id: checkout
         uses: actions/checkout@v3
-        
+
       - name: Project version
         id: version
         run: echo "project_version=$(cat VERSION)" >> $GITHUB_OUTPUT
-      
+
       - name: Create release
         id: release
         uses: actions/create-release@v1
@@ -33,9 +33,9 @@ jobs:
           body_path: CHANGELOG.md
           tag_name: cvlcore-${{ steps.version.outputs.project_version }}
           release_name: cvlcore-${{ steps.version.outputs.project_version }}
-          
+
   build-linux:
-    name: Create release
+    name: Build Linux version
     runs-on: ubuntu-20.04
     needs: create-release
     permissions:
@@ -59,7 +59,7 @@ jobs:
 
     - name: Build docs
       run: cargo doc --lib --verbose --jobs $(nproc)
-        
+
     - name: Create archive
       id: archive
       uses: vimtor/action-zip@5f1c4aa587ea41db1110df6a99981dbe19cee310
@@ -67,7 +67,7 @@ jobs:
         files: release
         dest: cvlcore-linux-${{ needs.create-release.outputs.version_output }}.zip
         recursive: true
-      
+
     - name: Upload linux artifact
       uses: actions/upload-release-asset@v1
       env:
