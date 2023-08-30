@@ -1,6 +1,6 @@
 # CVLCore
 
-![GitHub version](https://img.shields.io/badge/version-v1.0.1-green?style=plastic&labelColor=dark)
+![GitHub version](https://img.shields.io/badge/version-v1.1.0-green?style=plastic&labelColor=dark)
 
 [![Build](https://github.com/breadrock1/CVLCore/actions/workflows/master.yml/badge.svg)](https://github.com/breadrock1/CVLCore/actions/workflows/master.yml)
 
