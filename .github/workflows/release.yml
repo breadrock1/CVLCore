@@ -33,8 +33,8 @@ jobs:
           body_path: CHANGELOG.md
           tag_name: cvlcore-${{ steps.version.outputs.project_version }}
           release_name: cvlcore-${{ steps.version.outputs.project_version }}
-          
-  build-project:
+
+  build-linux:
     name: Create release
     runs-on: ubuntu-20.04
     needs: create-release
@@ -44,14 +44,21 @@ jobs:
     steps:
     - name: Checkout branch
       uses: actions/checkout@v3
-      
-    - name: Build docker images
-      run: docker build -t opencv-build < Dockerfile
-      
-    - name: Copy archive from docker
+
+    - name: Install prerequisites
       run: |
-        IMAGE_ID=$(docker images | awk '{print $3}' | awk 'NR==2')
-        docker cp $IMAGE_ID:/home/user/cvlcore/target/release ./
+        sudo apt update
+        sudo apt install -y build-essential curl \
+          cmake clang libclang-dev llvm llvm-dev \
+          qt5-default libopencv-dev \
+          python3-dev python3-numpy python3-opencv
+
+    - uses: actions/checkout@v3
+    - name: Build project
+      run: cargo build --verbose --jobs $(nproc)
+
+    - name: Build docs
+      run: cargo doc --lib --verbose --jobs $(nproc)
         
     - name: Create archive
       id: archive
