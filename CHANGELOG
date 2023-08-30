@@ -1,0 +1,16 @@
+## What's Changed
+* Improv/as lib by @breadrock1 in https://github.com/breadrock1/CVLCore/pull/1
+* Improve/add median calculating by @breadrock1 in https://github.com/breadrock1/CVLCore/pull/6
+* Improve/add median calculating by @breadrock1 in https://github.com/breadrock1/CVLCore/pull/7
+* Improve/add new example by @breadrock1 in https://github.com/breadrock1/CVLCore/pull/9
+* Add Dockerfile by @breadrock1 in https://github.com/breadrock1/CVLCore/pull/10
+* Improve/refactor api by @breadrock1 in https://github.com/breadrock1/CVLCore/pull/11
+* Improve/refactor api by @breadrock1 in https://github.com/breadrock1/CVLCore/pull/12
+* Improve/refactor api by @breadrock1 in https://github.com/breadrock1/CVLCore/pull/13
+* Improve/refactor api by @breadrock1 in https://github.com/breadrock1/CVLCore/pull/14
+* Update rust.yml by @breadrock1 in https://github.com/breadrock1/CVLCore/pull/8
+
+## New Contributors
+* @breadrock1 made their first contribution in https://github.com/breadrock1/CVLCore/pull/1
+
+**Full Changelog**: https://github.com/breadrock1/CVLCore/commits/v1.1.0
