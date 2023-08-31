@@ -52,4 +52,3 @@ fn processing_stream(vcap: &mut CvlCapture, window: &MainWindow) {
         }
     }
 }
-
