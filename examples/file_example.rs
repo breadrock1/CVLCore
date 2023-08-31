@@ -1,7 +1,7 @@
 extern crate cvlcore;
 use cvlcore::api::capture::*;
 use cvlcore::api::chain::*;
-use cvlcore::errors::CaptureResult;
+use cvlcore::errors::*;
 use cvlcore::ui::window::*;
 
 fn main() -> CaptureResult {
@@ -30,13 +30,8 @@ fn processing_stream(vcap: &mut CvlCapture, window: &MainWindow) {
             .canny()
             .append_frame()
             .reduce_abs()
-            .vibrating()
-            .statistic();
+            .vibrating();
 
-        let dispersion = &precessing_result.get_dispersion();
-        if dispersion.is_some() {
-            println!("{:?}", dispersion.unwrap());
-        }
         let chain_result = precessing_result.get_result();
         if chain_result.is_err() {
             println!("{}", chain_result.err().unwrap());
