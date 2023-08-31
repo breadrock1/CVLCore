@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["CaptureError","ProcessingError","ReadFrameError"],"type":["CaptureResult","ChainResult","ProcessingResult","ReadFrameResult"]};
