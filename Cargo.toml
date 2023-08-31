@@ -22,6 +22,9 @@ name = "web_cam_example"
 [[example]]
 name = "rtsp_example"
 
+[[example]]
+name = "compute_statistic"
+
 [[test]]
 name = "test_lib"
 path = "test/test_lib.rs"
