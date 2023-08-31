@@ -6,6 +6,12 @@ pub struct Statistic {
     pub ch4: u16,
 }
 
+impl Statistic {
+    pub fn new(ch1: u16, ch2: u16, ch3: u16, ch4: u16) -> Self {
+        Statistic { ch1, ch2, ch3, ch4 }
+    }
+}
+
 #[derive(Default, Clone, Debug)]
 pub struct Dispersion {
     pub ch1: f32,
