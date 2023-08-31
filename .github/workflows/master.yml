@@ -29,13 +29,13 @@ jobs:
     needs: [build]
     
     steps:
-      - name: Install prerequisites
-        run: |
-          sudo apt update
-          sudo apt install -y build-essential curl \
-            cmake clang libclang-dev llvm llvm-dev \
-            qt5-default libopencv-dev \
-            python3-dev python3-numpy python3-opencv
+      # - name: Install prerequisites
+      #   run: |
+      #     sudo apt update
+      #     sudo apt install -y build-essential curl \
+      #       cmake clang libclang-dev llvm llvm-dev \
+      #       qt5-default libopencv-dev \
+      #       python3-dev python3-numpy python3-opencv
     
       - uses: actions/checkout@v3
       - uses: Swatinem/rust-cache@v2
@@ -49,7 +49,7 @@ jobs:
         uses: taiki-e/install-action@cargo-llvm-cov
       
       - name: Generate code coverage
-        run: cargo llvm-cov --all-features --codecov --output-path coverage.json
+        run: cargo llvm-cov --codecov --output-path coverage.json
       
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v2
