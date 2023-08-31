@@ -26,12 +26,10 @@ impl CvlCapture {
         let open_result = match source_type {
             StreamSource::VideoFile => vcap.open_file(address, self.api),
             StreamSource::RtspStream => vcap.open_file(address, self.api),
-            StreamSource::WebCamera => {
-                match i32::from_str(address) {
-                    Ok(port) => vcap.open(port, self.api),
-                    Err(_) => Ok(false),
-                }
-            }
+            StreamSource::WebCamera => match i32::from_str(address) {
+                Ok(port) => vcap.open(port, self.api),
+                Err(_) => Ok(false),
+            },
         };
 
         match open_result {

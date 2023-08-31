@@ -1,9 +1,10 @@
 extern crate cvlcore;
 use cvlcore::api::capture::*;
 use cvlcore::api::chain::*;
+use cvlcore::errors::*;
 use cvlcore::ui::window::*;
 
-fn main() {
+fn main() -> CaptureResult {
     let url_address = std::env::args()
         .last()
         .expect("RTSP address has not been passed!");
@@ -13,10 +14,11 @@ fn main() {
     window.create_window();
 
     let mut vcap = CvlCapture::default();
-    vcap.open_stream(url_address.as_str(), StreamSource::RtspStream).unwrap();
+    vcap.open_stream(url_address.as_str(), StreamSource::RtspStream)?;
     processing_stream(&mut vcap, &window);
 
     window.close_window();
+    Ok(())
 }
 
 fn processing_stream(vcap: &mut CvlCapture, window: &MainWindow) {

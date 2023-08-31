@@ -1,3 +1,4 @@
+use crate::core::statistic::Statistic;
 use opencv::core::{Mat, Scalar, Vector};
 use opencv::core::{MatTrait, MatTraitConst, MatTraitConstManual};
 use std::ops::Deref;
@@ -5,11 +6,15 @@ use std::ops::Deref;
 #[derive(Default, Clone)]
 pub struct CvlMat {
     frame: Mat,
+    statistic: Option<Statistic>,
 }
 
 impl CvlMat {
-    pub fn new(frame: Mat) -> Self {
-        CvlMat { frame }
+    pub fn new(image: Mat) -> Self {
+        CvlMat {
+            frame: image,
+            statistic: None,
+        }
     }
 
     pub fn typ(&self) -> i32 {
@@ -34,6 +39,14 @@ impl CvlMat {
 
     pub fn bytes_data(&self) -> *const u8 {
         self.frame.data()
+    }
+
+    pub fn statistic(&self) -> Option<&Statistic> {
+        self.statistic.as_ref()
+    }
+
+    pub fn set_statistic(&mut self, statistic: Statistic) {
+        self.statistic = Some(statistic);
     }
 
     pub fn frame(&self) -> &Mat {

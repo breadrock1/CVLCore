@@ -6,6 +6,7 @@ extern crate test;
 mod benchmark {
     use cvlcore::core::bounds::*;
     use cvlcore::core::mat::*;
+    use cvlcore::core::statistic::*;
     use cvlcore::*;
     use opencv::core::Mat;
     use opencv::imgcodecs::imread;
@@ -142,6 +143,20 @@ mod benchmark {
         let color_bounds = ColorBounds::default();
         b.iter(|| {
             let _ = compute_vibration(&abs_frame, 8, 2, &color_bounds).unwrap();
+        });
+    }
+
+    #[bench]
+    fn bench_compute_statistic(b: &mut Bencher) {
+        let stat_1 = Statistic::new(354, 256, 129, 80);
+        let stat_2 = Statistic::new(879, 567, 280, 143);
+        let stat_3 = Statistic::new(657, 452, 456, 111);
+        let stat_4 = Statistic::new(200, 190, 160, 78);
+        let stat_5 = Statistic::new(123, 100, 98, 65);
+
+        b.iter(|| {
+            let stat_list = vec![&stat_1, &stat_2, &stat_3, &stat_4, &stat_5];
+            let _ = compute_statistic(stat_list, 10.0);
         });
     }
 

@@ -6,9 +6,10 @@ pub mod ui;
 
 use crate::core::bounds::*;
 use crate::core::mat::CvlMat;
+use crate::core::statistic::{Dispersion, Statistic};
 use crate::errors::{ProcessingError, ProcessingResult};
 
-use ndarray::Array;
+use ndarray::{Array, Array1};
 
 use opencv::core::{absdiff, cart_to_polar, count_non_zero, find_non_zero};
 use opencv::core::{Mat, MatExprTraitConst, MatTrait, MatTraitConst, MatTraitConstManual};
@@ -20,6 +21,8 @@ use opencv::imgproc::{COLOR_BGR2GRAY, THRESH_BINARY};
 use std::ops::Deref;
 use std::rc::Rc;
 
+const CHANNELS_COUNT: usize = 4;
+const POW_DIFF_VALUE: u32 = 2;
 pub const BGR_CV_IMAGE: i32 = 16;
 pub const ANY_2_DIM_IMAGE: i32 = 0;
 
@@ -425,6 +428,7 @@ pub fn compute_vibration(
     color_bounds: &ColorBounds,
 ) -> ProcessingResult {
     let frame_mat = image.frame();
+    let mut statistic = Statistic::default();
     let mut result_frame = create_zeros_mat(frame_mat.rows(), frame_mat.cols(), CV_64FC4).unwrap();
 
     let mut non_zero_pixels = Vector::<Point>::new();
@@ -448,10 +452,22 @@ pub fn compute_vibration(
         }
 
         let colored_scalar = match non_zero_count {
-            val if val >= color_bounds.get(4) => Scalar::from(RED_COLOR),
-            val if val >= color_bounds.get(3) => Scalar::from(YELLOW_COLOR),
-            val if val >= color_bounds.get(2) => Scalar::from(CYAN_COLOR),
-            val if val >= color_bounds.get(1) => Scalar::from(GREEN_COLOR),
+            val if val >= color_bounds.get(4) => {
+                statistic.ch4 += 1;
+                Scalar::from(RED_COLOR)
+            }
+            val if val >= color_bounds.get(3) => {
+                statistic.ch3 += 1;
+                Scalar::from(YELLOW_COLOR)
+            }
+            val if val >= color_bounds.get(2) => {
+                statistic.ch2 += 1;
+                Scalar::from(CYAN_COLOR)
+            }
+            val if val >= color_bounds.get(1) => {
+                statistic.ch1 += 1;
+                Scalar::from(GREEN_COLOR)
+            }
             _ => Scalar::from(BLACK_COLOR),
         };
 
@@ -461,5 +477,46 @@ pub fn compute_vibration(
             .copy_from_slice(colored_scalar.as_slice());
     }
 
-    Ok(CvlMat::from(result_frame))
+    let mut cvlmat = CvlMat::from(result_frame);
+    cvlmat.set_statistic(statistic);
+
+    Ok(cvlmat)
+}
+
+///
+pub fn compute_statistic(history_stats: Vec<&Statistic>, normalization: f32) -> Dispersion {
+    let stats_arrays: Vec<_> = history_stats
+        .into_iter()
+        .map(|st| [st.ch1, st.ch2, st.ch3, st.ch4])
+        .map(|sl| Array1::from_shape_vec(CHANNELS_COUNT, sl.to_vec()).unwrap())
+        .collect();
+
+    let stats_medians: &Vec<u16> = &stats_arrays
+        .iter()
+        .map(Array::mean)
+        .map(Option::unwrap)
+        .collect();
+
+    let mut tmp_slice = [0f32; CHANNELS_COUNT];
+    stats_arrays.into_iter().for_each(|array| {
+        compute_math_expectation(&mut tmp_slice, &array, stats_medians);
+    });
+
+    Dispersion::from(
+        tmp_slice
+            .into_iter()
+            .map(f32::sqrt)
+            .map(|val| val / normalization)
+            .collect::<Vec<f32>>(),
+    )
+}
+
+///
+fn compute_math_expectation(tmp_slice: &mut [f32; 4], array: &Array1<u16>, medians: &[u16]) {
+    (0..CHANNELS_COUNT).for_each(|index| {
+        let carr = *array.get(index).unwrap() as i32;
+        let cmed = *medians.get(index).unwrap() as i32;
+        let diff = (carr - cmed).pow(POW_DIFF_VALUE) as f32;
+        *tmp_slice.get_mut(index).unwrap() += diff;
+    });
 }

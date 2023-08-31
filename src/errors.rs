@@ -24,6 +24,8 @@ pub enum ProcessingError {
     GenThreshold(String),
     #[error("Caught error while transforming Mat to sobel.")]
     GenSobel(String),
+    #[error("Caught error while computing statistics.")]
+    ComputeStatistic,
 }
 
 pub type CaptureResult = Result<(), CaptureError>;
