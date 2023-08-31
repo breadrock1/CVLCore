@@ -1,7 +1,7 @@
 # CVLCore
 
-![GitHub version](https://img.shields.io/badge/version-v1.1.0-green?style=plastic&labelColor=dark)
-
+[![GitHub version](https://img.shields.io/badge/version-v1.1.0-green?labelColor=dark)](https://img.shields.io/badge/version-v1.1.0-green?labelColor=dark)
+[![Minimum rustc 1.74](https://img.shields.io/badge/rustc-1.74+-blue.svg)](https://rust-lang.github.io/rfcs/2495-min-rust-version.html)
 [![Build](https://github.com/breadrock1/CVLCore/actions/workflows/master.yml/badge.svg)](https://github.com/breadrock1/CVLCore/actions/workflows/master.yml)
 
 [//]: # ([![Creating Release]&#40;https://github.com/breadrock1/CVLCore/actions/workflows/release.yml/badge.svg?branch=master&event=create&#41;]&#40;https://github.com/breadrock1/CVLDetector/actions/workflows/create-release-action.yml&#41;)
