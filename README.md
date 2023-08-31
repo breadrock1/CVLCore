@@ -21,14 +21,18 @@ This library allows you to:
 - Transmission of alarms via API, calculated during the calculation of vibration pixel statistics.
 
 ### Cite 
-@misc{CLVDetector,\
-  author = {Artem Amentes, Gleb Akimov},\
-  title = {Contactless Video Lie Detector},\
-  year = {2023},\
-  publisher = {GitHub},\
-  journal = {GitHub repository},\
-  email = {artem@socialcodesoftware.co.uk}
+```
+@misc{
+    CLVDetector,
+    author = {Artem Amentes, Gleb Akimov},
+    title = {Contactless Video Lie Detector},
+    year = {2023},
+    publisher = {GitHub},
+    journal = {GitHub repository},
+    email = {artem@socialcodesoftware.co.uk,
+             breadrock1@gmail.com}
 }
+```
 
 ### License
 GNU AFFERO GENERAL PUBLIC LICENSE
