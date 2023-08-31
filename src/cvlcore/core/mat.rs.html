@@ -99,18 +99,36 @@
 <a href="#99" id="99">99</a>
 <a href="#100" id="100">100</a>
 <a href="#101" id="101">101</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>opencv::core::{Mat, Scalar, Vector};
+<a href="#102" id="102">102</a>
+<a href="#103" id="103">103</a>
+<a href="#104" id="104">104</a>
+<a href="#105" id="105">105</a>
+<a href="#106" id="106">106</a>
+<a href="#107" id="107">107</a>
+<a href="#108" id="108">108</a>
+<a href="#109" id="109">109</a>
+<a href="#110" id="110">110</a>
+<a href="#111" id="111">111</a>
+<a href="#112" id="112">112</a>
+<a href="#113" id="113">113</a>
+<a href="#114" id="114">114</a>
+</pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::core::statistic::Statistic;
+<span class="kw">use </span>opencv::core::{Mat, Scalar, Vector};
 <span class="kw">use </span>opencv::core::{MatTrait, MatTraitConst, MatTraitConstManual};
 <span class="kw">use </span>std::ops::Deref;
 
 <span class="attr">#[derive(Default, Clone)]
 </span><span class="kw">pub struct </span>CvlMat {
     frame: Mat,
+    statistic: <span class="prelude-ty">Option</span>&lt;Statistic&gt;,
 }
 
 <span class="kw">impl </span>CvlMat {
-    <span class="kw">pub fn </span>new(frame: Mat) -&gt; <span class="self">Self </span>{
-        CvlMat { frame }
+    <span class="kw">pub fn </span>new(image: Mat) -&gt; <span class="self">Self </span>{
+        CvlMat {
+            frame: image,
+            statistic: <span class="prelude-val">None</span>,
+        }
     }
 
     <span class="kw">pub fn </span>typ(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; i32 {
@@ -135,6 +153,14 @@
 
     <span class="kw">pub fn </span>bytes_data(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">*const </span>u8 {
         <span class="self">self</span>.frame.data()
+    }
+
+    <span class="kw">pub fn </span>statistic(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>Statistic&gt; {
+        <span class="self">self</span>.statistic.as_ref()
+    }
+
+    <span class="kw">pub fn </span>set_statistic(<span class="kw-2">&amp;mut </span><span class="self">self</span>, statistic: Statistic) {
+        <span class="self">self</span>.statistic = <span class="prelude-val">Some</span>(statistic);
     }
 
     <span class="kw">pub fn </span>frame(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Mat {
