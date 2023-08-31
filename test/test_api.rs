@@ -4,6 +4,7 @@ extern crate cvlcore;
 mod main_test {
     use cvlcore::api::chain::ChainProcessing;
     use cvlcore::core::mat::CvlMat;
+    use cvlcore::core::statistic::*;
     use cvlcore::*;
     use opencv::core::{Mat, MatTraitConst};
     use opencv::imgcodecs::imread;
@@ -38,6 +39,35 @@ mod main_test {
         let result = chain_result.unwrap();
         assert_eq!(result.frame().channels(), 4);
         assert_eq!(result.frame().dims(), 2);
+    }
+
+    #[test]
+    fn test_chain_statistic() {
+        let frames = load_resource_frames();
+        let all_frames = frames.into_iter().map(CvlMat::new).collect::<Vec<CvlMat>>();
+
+        let mut dispertion = Dispersion::default();
+        let mut own_chain = ChainProcessing::default();
+        for cvlmat in all_frames {
+            let precessing_result = own_chain
+                .run_chain(cvlmat)
+                .grayscale()
+                .canny()
+                .append_frame()
+                .reduce_abs()
+                .vibrating()
+                .statistic();
+
+            match precessing_result.get_dispersion() {
+                None => continue,
+                Some(result) => dispertion = result.clone(),
+            }
+        }
+
+        assert_eq!(dispertion.ch1, 177.78374);
+        assert_eq!(dispertion.ch2, 78.44896);
+        assert_eq!(dispertion.ch3, 198.52461);
+        assert_eq!(dispertion.ch4, 141.05609);
     }
 
     fn load_resource_frames() -> Vec<Mat> {

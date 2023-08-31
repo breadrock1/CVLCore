@@ -4,6 +4,7 @@ extern crate cvlcore;
 mod main_test {
     use cvlcore::core::bounds::*;
     use cvlcore::core::mat::*;
+    use cvlcore::core::statistic::*;
     use cvlcore::*;
     use opencv::core::{Mat, MatTraitConst};
     use opencv::imgcodecs::imread;
@@ -139,6 +140,22 @@ mod main_test {
         let result = compute_vibration(&abs_frame, 8, 2, &color_bounds).unwrap();
         assert_eq!(result.frame().channels(), 4);
         assert_eq!(result.frame().dims(), 2);
+    }
+
+    #[test]
+    fn test_chain_statistic() {
+        let stat_1 = Statistic::new(354, 256, 129, 80);
+        let stat_2 = Statistic::new(879, 567, 280, 143);
+        let stat_3 = Statistic::new(657, 452, 456, 111);
+        let stat_4 = Statistic::new(200, 190, 160, 78);
+        let stat_5 = Statistic::new(123, 100, 98, 65);
+
+        let stat_list = vec![&stat_1, &stat_2, &stat_3, &stat_4, &stat_5];
+        let dispersion = compute_statistic(stat_list, 10.0);
+        assert_eq!(dispersion.ch1, 83.06088);
+        assert_eq!(dispersion.ch2, 51.591084);
+        assert_eq!(dispersion.ch3, 52.43205);
+        assert_eq!(dispersion.ch4, 15.147937);
     }
 
     fn load_resource_frames() -> Vec<Mat> {
