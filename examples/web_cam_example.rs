@@ -1,18 +1,20 @@
 extern crate cvlcore;
 use cvlcore::api::capture::*;
 use cvlcore::api::chain::*;
-use cvlcore::ui::*;
+use cvlcore::errors::*;
+use cvlcore::ui::window::*;
 
-fn main() {
+fn main() -> CaptureResult {
     let window_name = "CVLDetector Demo";
     let window = MainWindow::new(window_name);
     window.create_window();
 
     let mut vcap = CvlCapture::default();
-    vcap.open_stream("0").unwrap();
+    vcap.open_stream("0", StreamSource::WebCamera)?;
     processing_stream(&mut vcap, &window);
 
     window.close_window();
+    Ok(())
 }
 
 fn processing_stream(vcap: &mut CvlCapture, window: &MainWindow) {

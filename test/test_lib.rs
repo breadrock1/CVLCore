@@ -2,9 +2,10 @@ extern crate cvlcore;
 
 #[cfg(test)]
 mod main_test {
-    use cvlcore::api::chain::*;
     use cvlcore::core::bounds::*;
-    use cvlcore::core::cvl::*;
+    use cvlcore::core::mat::*;
+    use cvlcore::core::statistic::*;
+    use cvlcore::*;
     use opencv::core::{Mat, MatTraitConst};
     use opencv::imgcodecs::imread;
     use std::path::Path;
@@ -71,7 +72,7 @@ mod main_test {
         let cvlmat = CvlMat::new(mat.clone());
         let gray = gen_grayscale_frame(&cvlmat).unwrap();
         let median = calculate_mat_median(&gray).unwrap_or(0f64);
-        assert_eq!(median, 45.84036024305556);
+        assert_eq!(median, 194.86283854166666);
     }
 
     #[test]
@@ -142,42 +143,28 @@ mod main_test {
     }
 
     #[test]
-    fn test_chain_processing() {
-        let frames = load_resource_frames();
-        let mat = frames.first().unwrap();
-        let cvlmat = CvlMat::new(mat.clone());
+    fn test_chain_statistic() {
+        let stat_1 = Statistic::new(354, 256, 129, 80);
+        let stat_2 = Statistic::new(879, 567, 280, 143);
+        let stat_3 = Statistic::new(657, 452, 456, 111);
+        let stat_4 = Statistic::new(200, 190, 160, 78);
+        let stat_5 = Statistic::new(123, 100, 98, 65);
 
-        let abs_frames = frames
-            .into_iter()
-            .map(CvlMat::new)
-            .map(|m| gen_grayscale_frame(&m).unwrap())
-            .map(|m| gen_canny_frame_by_sigma(&m, 3, 0.05, true).unwrap())
-            .map(Rc::new)
-            .collect::<Vec<Rc<CvlMat>>>();
-
-        let mut own_chain = ChainProcessing::default();
-        own_chain.set_frames(&abs_frames);
-        let precessing_result = own_chain
-            .run_chain(cvlmat)
-            .grayscale()
-            .canny()
-            .append_frame()
-            .reduce_abs()
-            .vibrating();
-
-        let chain_result = precessing_result.get_result();
-        let result = chain_result.unwrap();
-        assert_eq!(result.frame().channels(), 4);
-        assert_eq!(result.frame().dims(), 2);
+        let stat_list = vec![&stat_1, &stat_2, &stat_3, &stat_4, &stat_5];
+        let dispersion = compute_statistic(stat_list, 10.0);
+        assert_eq!(dispersion.ch1, 83.06088);
+        assert_eq!(dispersion.ch2, 51.591084);
+        assert_eq!(dispersion.ch3, 52.43205);
+        assert_eq!(dispersion.ch4, 15.147937);
     }
 
     fn load_resource_frames() -> Vec<Mat> {
         let flags = 3;
-        Path::new("resources/")
+        Path::new("test/resources/")
             .read_dir()
             .unwrap()
             .map(Result::unwrap)
-            .filter(|f| f.file_name().to_str().unwrap().contains("test_frame_"))
+            .filter(|f| f.file_name().to_str().unwrap().contains("test_file_"))
             .map(|f| f.path().to_str().unwrap().to_string())
             .map(|f| imread(f.as_str(), flags).unwrap())
             .collect()

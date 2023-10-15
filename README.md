@@ -1,8 +1,8 @@
 # CVLCore
 
-![GitHub version](https://img.shields.io/badge/version-v1.0.1-green?style=plastic&labelColor=dark)
-
-[![Building Project](https://github.com/breadrock1/CVLCore/actions/workflows/rust.yml/badge.svg?branch=master)](https://github.com/breadrock1/CVLDetector/actions/workflows/rust.yml)
+[![GitHub version](https://img.shields.io/badge/version-v1.1.0-green?labelColor=dark)](https://img.shields.io/badge/version-v1.1.0-green?labelColor=dark)
+[![Minimum rustc 1.74](https://img.shields.io/badge/rustc-1.74+-blue.svg)](https://rust-lang.github.io/rfcs/2495-min-rust-version.html)
+[![Build](https://github.com/breadrock1/CVLCore/actions/workflows/master.yml/badge.svg)](https://github.com/breadrock1/CVLCore/actions/workflows/master.yml)
 
 [//]: # ([![Creating Release]&#40;https://github.com/breadrock1/CVLCore/actions/workflows/release.yml/badge.svg?branch=master&event=create&#41;]&#40;https://github.com/breadrock1/CVLDetector/actions/workflows/create-release-action.yml&#41;)
 
@@ -21,14 +21,18 @@ This library allows you to:
 - Transmission of alarms via API, calculated during the calculation of vibration pixel statistics.
 
 ### Cite 
-@misc{CLVDetector,\
-  author = {Artem Amentes, Gleb Akimov},\
-  title = {Contactless Video Lie Detector},\
-  year = {2023},\
-  publisher = {GitHub},\
-  journal = {GitHub repository},\
-  email = {artem@socialcodesoftware.co.uk}
+```
+@misc{
+    CLVDetector,
+    author = {Artem Amentes, Gleb Akimov},
+    title = {Contactless Video Lie Detector},
+    year = {2023},
+    publisher = {GitHub},
+    journal = {GitHub repository},
+    email = {artem@socialcodesoftware.co.uk,
+             breadrock1@gmail.com}
 }
+```
 
 ### License
 GNU AFFERO GENERAL PUBLIC LICENSE

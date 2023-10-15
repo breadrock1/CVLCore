@@ -1,4 +1,4 @@
-use crate::core::cvl::CvlMat;
+use crate::core::mat::CvlMat;
 use thiserror::Error;
 
 pub type ChainResult = Result<CvlMat, ProcessingError>;
@@ -22,6 +22,10 @@ pub enum ProcessingError {
     GenGrayScale(String),
     #[error("Caught error while transforming Mat to threshold.")]
     GenThreshold(String),
+    #[error("Caught error while transforming Mat to sobel.")]
+    GenSobel(String),
+    #[error("Caught error while computing statistics.")]
+    ComputeStatistic,
 }
 
 pub type CaptureResult = Result<(), CaptureError>;

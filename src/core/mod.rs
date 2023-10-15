@@ -1,3 +1,4 @@
 pub mod bounds;
-mod colors;
-pub mod cvl;
+pub mod deque;
+pub mod mat;
+pub mod statistic;

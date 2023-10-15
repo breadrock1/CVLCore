@@ -1,4 +1,4 @@
-use crate::core::cvl::CvlMat;
+use crate::core::mat::CvlMat;
 use opencv::highgui::{destroy_window, imshow, named_window, wait_key};
 use opencv::highgui::{WINDOW_AUTOSIZE, WINDOW_GUI_NORMAL};
 

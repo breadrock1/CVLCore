@@ -6,19 +6,36 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ndarray = "0.15.6"
-opencv = "0.84.5"
-thiserror = "1.0.47"
+ndarray = "^0.15"
+opencv = "^0.83"
+thiserror = "^1.0"
+
+[build-dependencies]
+cbindgen = "^0.24"
+
+[[example]]
+name = "file_example"
 
 [[example]]
 name = "web_cam_example"
 
 [[example]]
-name = "file_example"
+name = "rtsp_example"
+
+[[example]]
+name = "compute_statistic"
 
 [[test]]
-name = "main_tests"
-path = "test/tests.rs"
+name = "test_lib"
+path = "test/test_lib.rs"
+
+[[test]]
+name = "test_api"
+path = "test/test_api.rs"
+
+[[test]]
+name = "test_deque"
+path = "test/test_deque.rs"
 
 [[bench]]
 name = "main_benchmarks"

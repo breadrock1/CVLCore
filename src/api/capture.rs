@@ -1,9 +1,15 @@
-use crate::core::cvl::CvlMat;
+use crate::core::mat::CvlMat;
 use crate::errors::{CaptureError, CaptureResult, ReadFrameError, ReadFrameResult};
 use opencv::core::Mat;
 use opencv::hub_prelude::VideoCaptureTrait;
 use opencv::videoio::{VideoCapture, CAP_ANY};
 use std::str::FromStr;
+
+pub enum StreamSource {
+    VideoFile,
+    WebCamera,
+    RtspStream,
+}
 
 pub struct CvlCapture {
     capture: VideoCapture,
@@ -15,23 +21,21 @@ impl CvlCapture {
         CvlCapture::default()
     }
 
-    pub fn open_stream(&mut self, source: &str) -> CaptureResult {
+    pub fn open_stream(&mut self, address: &str, source_type: StreamSource) -> CaptureResult {
         let vcap = &mut self.capture;
-        let src_index = i32::from_str(source);
-        if src_index.is_err() {
-            let result = vcap.open_file(source, self.api);
-            if !result.unwrap() {
-                let msg = format!("Failed open passed file: {}", source);
-                return Err(CaptureError::OpenStream(msg));
-            }
-            return Ok(());
-        }
+        let open_result = match source_type {
+            StreamSource::VideoFile => vcap.open_file(address, self.api),
+            StreamSource::RtspStream => vcap.open_file(address, self.api),
+            StreamSource::WebCamera => match i32::from_str(address) {
+                Ok(port) => vcap.open(port, self.api),
+                Err(_) => Ok(false),
+            },
+        };
 
-        let com_port = src_index.unwrap();
-        match vcap.open(com_port, self.api).unwrap() {
-            true => Ok(()),
-            false => {
-                let msg = format!("There is no such port: {}", com_port);
+        match open_result {
+            Ok(_) => Ok(()),
+            Err(err) => {
+                let msg = format!("Failed open passed file {}: {}", address, err);
                 Err(CaptureError::OpenStream(msg))
             }
         }
