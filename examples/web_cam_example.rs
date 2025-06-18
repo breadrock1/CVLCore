@@ -1,4 +1,5 @@
 extern crate cvlcore;
+
 use cvlcore::api::capture::*;
 use cvlcore::api::chain::*;
 use cvlcore::errors::*;
@@ -20,7 +21,7 @@ fn main() -> CaptureResult {
 fn processing_stream(vcap: &mut CvlCapture, window: &MainWindow) {
     let mut own_chain = ChainProcessing::default();
     while let Ok(frame) = vcap.read_frame() {
-        let precessing_result = own_chain
+        let processing = own_chain
             .run_chain(frame)
             .grayscale()
             .canny()
@@ -28,13 +29,14 @@ fn processing_stream(vcap: &mut CvlCapture, window: &MainWindow) {
             .reduce_abs()
             .vibrating();
 
-        let chain_result = precessing_result.get_result();
-        if chain_result.is_err() {
-            println!("{}", chain_result.err().unwrap());
-            continue;
-        }
+        let cvl_mat = match processing.get_result() {
+            Ok(mat) => mat,
+            Err(err) => {
+                println!("failed while processing frame: {err:#?}");
+                continue;
+            }
+        };
 
-        let cvl_mat = chain_result.unwrap();
         window.show_frame(&cvl_mat);
         match window.wait_event() {
             WindowSignals::KeepProcessing => {}

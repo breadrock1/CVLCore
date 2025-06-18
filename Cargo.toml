@@ -6,12 +6,12 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ndarray = "^0.15"
-opencv = "^0.85"
-thiserror = "^1.0"
+ndarray = "0.16.1"
+opencv = "0.93.4"
+thiserror = "2.0.3"
 
 [build-dependencies]
-cbindgen = "^0.24"
+cbindgen = "0.27.0"
 
 [[example]]
 name = "file_example"
