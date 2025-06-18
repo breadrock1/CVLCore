@@ -12,10 +12,7 @@ jobs:
       - name: Install prerequisites
         run: |
           sudo apt update
-          sudo apt install -y build-essential curl \
-            cmake clang libclang-dev llvm llvm-dev \
-            qt5-default libopencv-dev \
-            python3-dev python3-numpy python3-opencv
+          sudo apt install -y libopencv-dev
           
       - uses: actions/checkout@v3
       - name: Build project
