@@ -8,7 +8,6 @@ RUN apt-get update && apt-get install -y build-essential git curl cmake clang li
     libcanberra-gtk3-module libjpeg-dev libpng-dev libtiff-dev libdc1394-22-dev libopencv-dev
 
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
-    sh -s -- --default-toolchain 1.71.0 -y && \
     ln -s $HOME/.cargo/bin/* /usr/bin/
 
 RUN rustup default nightly-unknown-linux-gnu

@@ -18,7 +18,7 @@ pub struct ProcessingSettings {
 impl Default for ProcessingSettings {
     fn default() -> Self {
         ProcessingSettings {
-            frames_count: 5,
+            frames_count: 15,
             neighbours: 8,
             window_size: 2,
             is_reduced_abs: true,

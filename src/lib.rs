@@ -11,6 +11,7 @@ use crate::errors::{ProcessingError, ProcessingResult};
 
 use ndarray::{Array, Array1};
 
+use opencv::boxed_ref::BoxedRef;
 use opencv::core::{absdiff, cart_to_polar, count_non_zero, find_non_zero};
 use opencv::core::{Mat, MatExprTraitConst, MatTrait, MatTraitConst, MatTraitConstManual};
 use opencv::core::{Point, Rect, Scalar, Vector};
@@ -44,13 +45,11 @@ pub const ANY_2_DIM_IMAGE: i32 = 0;
 #[inline(always)]
 pub fn gen_grayscale_frame(frame: &CvlMat) -> ProcessingResult {
     let mut gray_frame = Mat::default();
-    match cvt_color(frame.frame(), &mut gray_frame, COLOR_BGR2GRAY, 0) {
-        Ok(_) => Ok(CvlMat::from(gray_frame)),
-        Err(_) => {
-            let msg = "Failed while trying to transform frame to grayscale.";
-            Err(ProcessingError::GenGrayScale(msg.to_string()))
-        }
+    if let Err(err) = cvt_color(frame.frame(), &mut gray_frame, COLOR_BGR2GRAY, 0) {
+        return Err(ProcessingError::GenGrayScale(err.message));
     }
+
+    Ok(CvlMat::from(gray_frame))
 }
 
 /// This method returns threshold image from passed bgr-image by passed black/white bounds
@@ -73,13 +72,11 @@ pub fn gen_grayscale_frame(frame: &CvlMat) -> ProcessingResult {
 #[inline(always)]
 pub fn gen_threshold_frame(frame: &CvlMat, thresh: f64, maxval: f64) -> ProcessingResult {
     let mut gray: Mat = Mat::default();
-    match threshold(frame.frame(), &mut gray, thresh, maxval, THRESH_BINARY) {
-        Ok(_) => Ok(CvlMat::from(gray)),
-        Err(_) => {
-            let msg = "Failed while trying to transform frame to threshold.";
-            Err(ProcessingError::GenThreshold(msg.to_string()))
-        }
+    if let Err(err) = threshold(frame.frame(), &mut gray, thresh, maxval, THRESH_BINARY) {
+        return Err(ProcessingError::GenThreshold(err.message));
     }
+
+    Ok(CvlMat::from(gray))
 }
 
 /// This method returns canny image from passed grayscale image by passed parameters.
@@ -112,13 +109,11 @@ pub fn gen_canny_frame(
     is_l2: bool,
 ) -> ProcessingResult {
     let mut canny_frame = Mat::default();
-    match canny(frame.frame(), &mut canny_frame, low, high, size, is_l2) {
-        Ok(_) => Ok(CvlMat::from(canny_frame)),
-        Err(_) => {
-            let msg = "Failed while trying to transform frame to canny.";
-            Err(ProcessingError::GenCanny(msg.to_string()))
-        }
+    if let Err(err) = canny(frame.frame(), &mut canny_frame, low, high, size, is_l2) {
+        return Err(ProcessingError::GenCanny(err.message))
     }
+
+    Ok(CvlMat::from(canny_frame))
 }
 
 /// This method returns canny image from passed grayscale image by passed parameters.
@@ -152,13 +147,11 @@ pub fn gen_canny_frame_by_sigma(
     let (low, high) = (1f64 - sigma + median, 1f64 + &sigma + median);
 
     let mut canny_frame = Mat::default();
-    match canny(frame.deref(), &mut canny_frame, low, high, size, is_l2) {
-        Ok(_) => Ok(CvlMat::from(canny_frame)),
-        Err(_) => {
-            let msg = "Failed while trying to transform frame to canny.";
-            Err(ProcessingError::GenCanny(msg.to_string()))
-        }
+    if let Err(err) = canny(frame.deref(), &mut canny_frame, low, high, size, is_l2) {
+        return Err(ProcessingError::GenCanny(err.message))
     }
+
+    Ok(CvlMat::from(canny_frame))
 }
 
 /// This method returns new Mat object with zeros by passed rows, columns and type parameters.
@@ -189,7 +182,7 @@ fn create_zeros_mat(rows: i32, cols: i32, cv_type: i32) -> Option<Mat> {
 /// ## Returns:
 /// Returns `Option<Mat>` of executing [`Mat::roi`] method from opencv library.
 #[inline(always)]
-fn create_roi_mat(frame: &Mat, row: i32, col: i32, window: i32) -> Option<Mat> {
+fn create_roi_mat(frame: &Mat, row: i32, col: i32, window: i32) -> Option<BoxedRef<Mat>> {
     let l_corn = Point::new(col - window, row - window);
     let r_corn = Point::new(col + window, row + window);
     let rect = Rect::from_points(l_corn, r_corn);
@@ -293,13 +286,11 @@ pub fn gen_distribution_frame(image: &CvlMat, thresh: f64, maxval: f64) -> Proce
 #[inline(always)]
 fn gen_sobel_frame(frame: &Mat) -> ProcessingResult {
     let mut g_x = Mat::default();
-    match sobel(frame, &mut g_x, CV_32F, 1, 0, 3, 1.0, 0f64, BORDER_DEFAULT) {
-        Ok(_) => Ok(CvlMat::new(g_x.to_owned())),
-        Err(_) => {
-            let msg = "Failed while trying to transform frame to sobel.";
-            Err(ProcessingError::GenSobel(msg.to_string()))
-        }
+    if let Err(err) = sobel(frame, &mut g_x, CV_32F, 1, 0, 3, 1.0, 0f64, BORDER_DEFAULT) {
+        return Err(ProcessingError::GenSobel(err.message));
     }
+
+    Ok(CvlMat::new(g_x.to_owned()))
 }
 
 /// There is wrapper method to invoke opencv::absdiff() method.
@@ -317,13 +308,11 @@ fn gen_sobel_frame(frame: &Mat) -> ProcessingResult {
 #[inline]
 fn gen_diff_frame(img1: &Mat, img2: &Mat) -> ProcessingResult {
     let mut tmp = Mat::default();
-    match absdiff(img1, img2, &mut tmp) {
-        Ok(_) => Ok(CvlMat::from(tmp)),
-        Err(_) => {
-            let msg = "Failed while trying to execute absdiff function.";
-            Err(ProcessingError::GenDifferences(msg.to_string()))
-        }
+    if let Err(err) = absdiff(img1, img2, &mut tmp) {
+        return Err(ProcessingError::GenDifferences(err.message))
     }
+
+    Ok(CvlMat::from(tmp))
 }
 
 /// This recursive method returns result-image of opencv::absdiff() method by passed
@@ -393,12 +382,13 @@ pub fn gen_abs_frame_reduce(frame_images: &[Rc<CvlMat>]) -> ProcessingResult {
     let result = frame_images
         .iter()
         .cloned()
-        .reduce(|img1, img2| Rc::new(gen_diff_frame(img1.frame(), img2.frame()).unwrap()));
+        .reduce(|img1, img2| {
+            Rc::new(gen_diff_frame(img1.frame(), img2.frame()).unwrap())
+        });
 
-    match result {
-        None => Err(ProcessingError::GenAbs),
-        Some(frame) => Ok(frame.as_ref().to_owned()),
-    }
+    result
+        .map(|it| it.as_ref().to_owned())
+        .ok_or(ProcessingError::GenAbs)
 }
 
 /// This method returns image with vibrating pixels (colored by bounds values) by passed image.
@@ -429,27 +419,27 @@ pub fn compute_vibration(
 ) -> ProcessingResult {
     let frame_mat = image.frame();
     let mut statistic = Statistic::default();
-    let mut result_frame = create_zeros_mat(frame_mat.rows(), frame_mat.cols(), CV_64FC4).unwrap();
+    let Some(mut result_frame) = create_zeros_mat(frame_mat.rows(), frame_mat.cols(), CV_64FC4) else {
+        let msg = "returned empty zeros mat".to_string();
+        return Err(ProcessingError::ComputeVibration(msg));
+    };
 
     let mut non_zero_pixels = Vector::<Point>::new();
     find_non_zero(frame_mat, &mut non_zero_pixels).unwrap();
 
-    for non_zero_point in non_zero_pixels.to_vec() {
+    for non_zero_point in non_zero_pixels.into_iter() {
         let (row, col) = (non_zero_point.y, non_zero_point.x);
         if row == 0 || col == 0 {
             continue;
         }
 
-        let roi_mat = create_roi_mat(frame_mat, row, col, window_size);
-        if roi_mat.is_none() {
+        let Some(roi_mat) = create_roi_mat(frame_mat, row, col, window_size) else {
             continue;
-        }
+        };
 
-        let roi_matrix = &roi_mat.unwrap();
-        let non_zero_count = count_non_zero(roi_matrix).unwrap();
-        if non_zero_count < neighbours {
+        let Ok(non_zero_count) = count_non_zero(&roi_mat) else {
             continue;
-        }
+        };
 
         let colored_scalar = match non_zero_count {
             val if val >= color_bounds.get(4) => {
@@ -471,10 +461,11 @@ pub fn compute_vibration(
             _ => Scalar::from(BLACK_COLOR),
         };
 
-        result_frame
-            .at_2d_mut::<Scalar>(row, col)
-            .unwrap()
-            .copy_from_slice(colored_scalar.as_slice());
+        let Ok(scalar) = result_frame.at_2d_mut::<Scalar>(row, col) else {
+            continue;
+        };
+
+        scalar.copy_from_slice(colored_scalar.as_slice());
     }
 
     let mut cvlmat = CvlMat::from(result_frame);
